@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImageUploader } from "./ImageUploader";
 import { WizardAnswers, UploadedImage, TemplateData } from "@/types/thumbnail";
-import { Sparkles, ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { Play, ArrowRight, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AssistedWizardProps {
@@ -18,20 +18,20 @@ interface AssistedWizardProps {
 const questions = [
   {
     id: 'goal',
-    question: "What's the goal of your thumbnail?",
-    placeholder: "e.g., Get clicks from people interested in productivity",
+    question: "Quel est l'objectif de votre miniature ?",
+    placeholder: "ex: Attirer les personnes intéressées par la productivité",
     emoji: "🎯",
   },
   {
     id: 'subject',
-    question: "Who or what is the main subject?",
-    placeholder: "e.g., Me holding a laptop, looking excited",
+    question: "Qui ou quoi est le sujet principal ?",
+    placeholder: "ex: Moi tenant un ordinateur, l'air excité",
     emoji: "👤",
   },
   {
     id: 'emotion',
-    question: "What emotion should it convey?",
-    placeholder: "e.g., Excitement, curiosity, urgency",
+    question: "Quelle émotion voulez-vous transmettre ?",
+    placeholder: "ex: Excitation, curiosité, urgence",
     emoji: "🎭",
   },
 ];
@@ -57,13 +57,13 @@ export function AssistedWizard({
   const handleNext = () => {
     if (isLastStep) {
       const template: TemplateData = {
-        name: 'Assisted Template',
+        name: 'Template Assisté',
         videoContext: answers.goal,
         objective: answers.goal,
         mainSubject: answers.subject,
         emotion: answers.emotion,
         shortText: '',
-        visualStyle: 'Modern, high contrast, YouTube-optimized',
+        visualStyle: 'Moderne, contraste élevé, optimisé YouTube',
       };
       onComplete(template);
       setIsComplete(true);
@@ -84,38 +84,37 @@ export function AssistedWizard({
 
   if (isComplete) {
     return (
-      <Card variant="elevated" className="opacity-0 animate-scale-in" style={{ animationDelay: '0.1s' }}>
+      <Card className="border-border opacity-0 animate-scale-in" style={{ animationDelay: '0.1s' }}>
         <CardHeader className="pb-4">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Check className="w-5 h-5 text-green-500" />
-            Template Ready!
+            <Check className="w-5 h-5 text-primary" />
+            Template Prêt !
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-            <p className="text-sm"><strong>Goal:</strong> {answers.goal}</p>
-            <p className="text-sm"><strong>Subject:</strong> {answers.subject}</p>
-            <p className="text-sm"><strong>Emotion:</strong> {answers.emotion}</p>
+            <p className="text-sm"><strong>Objectif :</strong> {answers.goal}</p>
+            <p className="text-sm"><strong>Sujet :</strong> {answers.subject}</p>
+            <p className="text-sm"><strong>Émotion :</strong> {answers.emotion}</p>
           </div>
 
           <ImageUploader images={images} onImagesChange={onImagesChange} />
 
           <Button
-            variant="gradient"
             size="lg"
-            className="w-full"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={onGenerate}
             disabled={isGenerating}
           >
             {isGenerating ? (
               <>
-                <span className="animate-spin">⏳</span>
-                Generating...
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Génération en cours...
               </>
             ) : (
               <>
-                <Sparkles className="w-5 h-5" />
-                Generate Thumbnails
+                <Play className="w-5 h-5 mr-2 fill-current" />
+                Générer les Miniatures
               </>
             )}
           </Button>
@@ -129,7 +128,7 @@ export function AssistedWizard({
               setStep(0);
             }}
           >
-            Start Over
+            Recommencer
           </Button>
         </CardContent>
       </Card>
@@ -137,10 +136,10 @@ export function AssistedWizard({
   }
 
   return (
-    <Card variant="elevated" className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+    <Card className="border-border opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Quick Wizard</CardTitle>
+          <CardTitle className="text-lg">Assistant Rapide</CardTitle>
           <div className="flex items-center gap-1">
             {questions.map((_, idx) => (
               <div
@@ -177,22 +176,21 @@ export function AssistedWizard({
             className="flex-1"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+            Retour
           </Button>
           <Button
-            variant={isLastStep ? "gradient" : "default"}
             onClick={handleNext}
             disabled={!answers[currentQuestion.id as keyof WizardAnswers].trim()}
-            className="flex-1"
+            className={cn("flex-1", isLastStep && "bg-primary hover:bg-primary/90")}
           >
             {isLastStep ? (
               <>
-                Complete
+                Terminer
                 <Check className="w-4 h-4 ml-2" />
               </>
             ) : (
               <>
-                Next
+                Suivant
                 <ArrowRight className="w-4 h-4 ml-2" />
               </>
             )}

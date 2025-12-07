@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { EditableBlock } from "./EditableBlock";
 import { ImageUploader } from "./ImageUploader";
 import { TemplateData, UploadedImage } from "@/types/thumbnail";
-import { Save, FolderOpen, Sparkles } from "lucide-react";
+import { Save, FolderOpen, Play, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface GuidedTemplateEditorProps {
@@ -33,27 +33,27 @@ export function GuidedTemplateEditor({
 
   const handleSaveTemplate = () => {
     if (!templateName.trim()) {
-      toast.error("Please enter a template name");
+      toast.error("Veuillez entrer un nom de template");
       return;
     }
     onTemplateChange({ ...template, name: templateName });
-    toast.success("Template saved successfully!");
+    toast.success("Template sauvegardé !");
   };
 
   const handleLoadTemplate = () => {
-    toast.info("Template library coming soon!");
+    toast.info("Bibliothèque de templates bientôt disponible !");
   };
 
   return (
-    <Card variant="elevated" className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+    <Card className="border-border opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Template Editor</CardTitle>
+          <CardTitle className="text-lg">Éditeur de Template</CardTitle>
           <div className="flex items-center gap-2">
             <Input
               value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
-              placeholder="Template name..."
+              placeholder="Nom du template..."
               className="w-40 h-9 text-sm"
             />
             <Button variant="outline" size="sm" onClick={handleSaveTemplate}>
@@ -68,51 +68,51 @@ export function GuidedTemplateEditor({
       <CardContent className="space-y-1">
         <EditableBlock
           icon="🎬"
-          label="Video Context"
+          label="Contexte de la vidéo"
           value={template.videoContext}
           onChange={(v) => updateField('videoContext', v)}
-          placeholder="What is your video about? (e.g., 'A tutorial about building a startup')"
+          placeholder="De quoi parle votre vidéo ? (ex: 'Un tutoriel sur le montage vidéo')"
         />
         
         <EditableBlock
           icon="🎯"
-          label="Thumbnail Objective"
+          label="Objectif de la miniature"
           value={template.objective}
           onChange={(v) => updateField('objective', v)}
-          placeholder="What should the thumbnail achieve? (e.g., 'Attract entrepreneurs')"
+          placeholder="Que doit accomplir la miniature ? (ex: 'Attirer les créateurs YouTube')"
         />
         
         <EditableBlock
           icon="😎"
-          label="Main Subject"
+          label="Sujet principal"
           value={template.mainSubject}
           onChange={(v) => updateField('mainSubject', v)}
-          placeholder="Who or what is the focus? (e.g., 'A confident person at a desk')"
+          placeholder="Qui ou quoi est au centre ? (ex: 'Mon visage surpris devant un écran')"
         />
         
         <EditableBlock
           icon="🎭"
-          label="Emotion / Tone"
+          label="Émotion / Ton"
           value={template.emotion}
           onChange={(v) => updateField('emotion', v)}
-          placeholder="What feeling should it convey? (e.g., 'Excitement, curiosity')"
+          placeholder="Quel sentiment transmettre ? (ex: 'Excitation, curiosité')"
         />
         
         <EditableBlock
           icon="📝"
-          label="Short Text (3-5 words)"
+          label="Texte court (3-5 mots)"
           value={template.shortText}
           onChange={(v) => updateField('shortText', v)}
-          placeholder="Text overlay on thumbnail (e.g., 'START TODAY!')"
+          placeholder="Texte sur la miniature (ex: 'C'EST INCROYABLE !')"
           rows={1}
         />
         
         <EditableBlock
           icon="🎨"
-          label="Visual Style"
+          label="Style visuel"
           value={template.visualStyle}
           onChange={(v) => updateField('visualStyle', v)}
-          placeholder="Art style or aesthetic (e.g., 'Cinematic, vibrant colors')"
+          placeholder="Style artistique (ex: 'Cinématique, couleurs vives')"
         />
 
         <div className="pt-4">
@@ -121,21 +121,20 @@ export function GuidedTemplateEditor({
 
         <div className="pt-6">
           <Button
-            variant="gradient"
             size="lg"
-            className="w-full"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={onGenerate}
             disabled={isGenerating}
           >
             {isGenerating ? (
               <>
-                <span className="animate-spin">⏳</span>
-                Generating...
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                Génération en cours...
               </>
             ) : (
               <>
-                <Sparkles className="w-5 h-5" />
-                Generate Thumbnails
+                <Play className="w-5 h-5 mr-2 fill-current" />
+                Générer les Miniatures
               </>
             )}
           </Button>

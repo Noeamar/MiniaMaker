@@ -11,20 +11,20 @@ interface ModeSelectorProps {
 const modes = [
   {
     id: 'free' as InputMode,
-    title: 'Free Prompt',
-    description: 'Write anything you want',
+    title: 'Prompt Libre',
+    description: 'Écrivez ce que vous voulez',
     icon: FileText,
   },
   {
     id: 'guided' as InputMode,
-    title: 'Guided Template',
-    description: 'Structured editor with sections',
+    title: 'Template Guidé',
+    description: 'Éditeur structuré par sections',
     icon: Layout,
   },
   {
     id: 'assisted' as InputMode,
-    title: 'Assisted Mode',
-    description: 'Quick wizard with 3 questions',
+    title: 'Mode Assisté',
+    description: 'Assistant rapide en 3 questions',
     icon: Wand2,
   },
 ];
@@ -39,11 +39,10 @@ export function ModeSelector({ selectedMode, onModeChange }: ModeSelectorProps) 
         return (
           <Card
             key={mode.id}
-            variant="interactive"
             onClick={() => onModeChange(mode.id)}
             className={cn(
-              "opacity-0 animate-fade-in-up cursor-pointer transition-all duration-300",
-              isSelected && "ring-2 ring-primary border-primary/50 shadow-glow",
+              "opacity-0 animate-fade-in-up cursor-pointer transition-all duration-300 border",
+              isSelected && "ring-2 ring-primary border-primary/50",
               !isSelected && "hover:border-primary/30"
             )}
             style={{ animationDelay: `${index * 0.1}s` }}

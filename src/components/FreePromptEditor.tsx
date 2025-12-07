@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploader } from "./ImageUploader";
 import { UploadedImage } from "@/types/thumbnail";
-import { Sparkles } from "lucide-react";
+import { Play, Loader2 } from "lucide-react";
 
 interface FreePromptEditorProps {
   prompt: string;
@@ -23,44 +23,43 @@ export function FreePromptEditor({
   isGenerating,
 }: FreePromptEditorProps) {
   return (
-    <Card variant="elevated" className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+    <Card className="border-border opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
       <CardHeader className="pb-4">
-        <CardTitle className="text-lg">Free Prompt</CardTitle>
+        <CardTitle className="text-lg">Prompt Libre</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
           <Textarea
             value={prompt}
             onChange={(e) => onPromptChange(e.target.value)}
-            placeholder="Describe your ideal YouTube thumbnail... Be as creative as you want!
+            placeholder="Décrivez votre miniature YouTube idéale... Soyez aussi créatif que vous voulez !
 
-Example: A dramatic cinematic thumbnail showing a person looking shocked at their laptop screen, with glowing code in the background. Bold yellow text says 'IT WORKED!' The style is modern and tech-focused with high contrast."
+Exemple : Une miniature cinématique montrant une personne choquée devant son écran d'ordinateur, avec du code lumineux en arrière-plan. Un texte jaune en gras dit 'ÇA MARCHE !' Le style est moderne et tech avec un fort contraste."
             rows={8}
             className="resize-none text-base"
           />
           <p className="text-xs text-muted-foreground mt-2">
-            Tip: The more details you provide, the better the results will be.
+            Astuce : Plus vous donnez de détails, meilleurs seront les résultats.
           </p>
         </div>
 
         <ImageUploader images={images} onImagesChange={onImagesChange} />
 
         <Button
-          variant="gradient"
           size="lg"
-          className="w-full"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           onClick={onGenerate}
           disabled={isGenerating || !prompt.trim()}
         >
           {isGenerating ? (
             <>
-              <span className="animate-spin">⏳</span>
-              Generating...
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Génération en cours...
             </>
           ) : (
             <>
-              <Sparkles className="w-5 h-5" />
-              Generate Thumbnails
+              <Play className="w-5 h-5 mr-2 fill-current" />
+              Générer les Miniatures
             </>
           )}
         </Button>

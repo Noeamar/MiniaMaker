@@ -1,8 +1,7 @@
 import { useState, useRef } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UploadedImage } from "@/types/thumbnail";
-import { Upload, X, ImageIcon } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -25,7 +24,7 @@ export function ImageUploader({
     
     const remainingSlots = maxImages - images.length;
     if (remainingSlots <= 0) {
-      toast.error(`Maximum ${maxImages} images allowed`);
+      toast.error(`Maximum ${maxImages} images autorisées`);
       return;
     }
 
@@ -38,7 +37,7 @@ export function ImageUploader({
     }));
 
     onImagesChange([...images, ...newImages]);
-    toast.success(`${newImages.length} image(s) added`);
+    toast.success(`${newImages.length} image(s) ajoutée(s)`);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -69,7 +68,7 @@ export function ImageUploader({
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         <span className="text-lg">📎</span>
-        <span>Reference Images (optional, max {maxImages})</span>
+        <span>Images de référence (optionnel, max {maxImages})</span>
       </div>
 
       <div
@@ -94,10 +93,10 @@ export function ImageUploader({
         />
         <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
-          {isDragging ? "Drop images here" : "Click or drag images to upload"}
+          {isDragging ? "Déposez les images ici" : "Cliquez ou glissez des images"}
         </p>
         <p className="text-xs text-muted-foreground/70 mt-1">
-          Face photos, logos, screenshots, etc.
+          Photos de visages, logos, captures d'écran, etc.
         </p>
       </div>
 
@@ -119,7 +118,7 @@ export function ImageUploader({
                 <X className="w-3 h-3" />
               </Button>
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 rounded-b-lg">
-                <p className="text-xs text-white truncate">{image.name}</p>
+                <p className="text-xs text-primary-foreground truncate">{image.name}</p>
               </div>
             </div>
           ))}
