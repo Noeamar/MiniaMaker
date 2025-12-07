@@ -1,73 +1,121 @@
-# Welcome to your Lovable project
+# 🎨 MiniaMaker — AI-Powered YouTube Thumbnail Generator
 
-## Project info
+MiniaMaker is a modern web application that helps creators generate high-impact YouTube thumbnails using AI.  
+Users can write custom prompts, use guided templates, upload reference images, and generate multiple thumbnail variations instantly.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## 🚀 Features
 
-There are several ways of editing your application.
+### 🧠 AI Thumbnail Generation
+- Generate high-quality YouTube thumbnails with AI.
+- Accepts **custom user prompts** or **structured guided templates**.
+- Automatically applies **best practices** for YouTube thumbnails:
+  - Strong contrast  
+  - Large, bold text  
+  - Expressive facial emotions  
+  - Clean composition  
+  - High click-through-rate optimization  
 
-**Use Lovable**
+### 🖼️ Image Uploads
+- Upload reference images (faces, logos, screenshots).
+- Images are incorporated into the final AI generation request.
+- Supports multiple uploaded assets per generation.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### ✍️ Prompt Builder & Guided Templates
+- A clean template editor (like Notion blocks).
+- Lets users define:
+  - Video context  
+  - Thumbnail objective  
+  - Main subject  
+  - Emotion / tone  
+  - Text overlay  
+  - Visual style  
+  - Format preferences  
+- Templates can be saved, reused, and customized.
 
-Changes made via Lovable will be committed automatically to this repo.
+### 🎥 Multiple Thumbnail Formats
+Choose the output ratio:
+- 16:9 (YouTube standard)
+- 1:1
+- 9:16 (Shorts / TikTok)
+- Custom ratio
+- Optional logo overlay & branding settings
 
-**Use your preferred IDE**
+### 🎯 Themes (Persistent Preferences)
+- Create “themes” for specific types of videos (e.g., Finance, Gaming, Tech).
+- Each theme stores:
+  - Style preferences  
+  - Color schemes  
+  - Generated thumbnails  
+  - Favorite thumbnails  
+  - Behavioral memory of what the user prefers  
+- Themes help personalizing future generations.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 🌓 Modern UI & UX
+- Built with React + Tailwind + shadcn UI.
+- Clean, responsive layout.
+- Smooth generation flow with a **progress bar** (percentage-based).
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## 🔐 Authentication
+Users can sign in using:
+- Google  
+- Apple  
+- Microsoft  
+- GitHub  
+- Email/password  
+
+Accounts allow saving templates, themes, generation history, and preferences.
+
+---
+
+## 💳 Billing & Credits
+MiniaMaker includes a full monetization system:
+
+### Subscription plans
+- Free tier  
+- Pro Monthly  
+- Pro Yearly (discounted)
+
+### Credit system
+- Each generation consumes credits.
+- Users can:
+  - Buy credit packs  
+  - Upgrade to subscriptions  
+  - View payment history  
+
+Integrated with **Stripe Checkout & Stripe Customer Portal**.
+
+---
+
+## 📊 Dashboard
+A user dashboard shows:
+- Total thumbnails generated  
+- Credits remaining  
+- Monthly usage graph  
+- Favorite thumbnails  
+- Activity timeline  
+
+---
+
+## 🧱 Tech Stack
+
+- **React**
+- **Vite**
+- **TypeScript**
+- **TailwindCSS**
+- **shadcn/ui**
+- **Stripe API**
+- **AI Backend (Gemini / custom API)**
+
+---
+
+## 🛠️ Local Development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+git clone https://github.com/Noeamar/MiniaMaker.git
+cd MiniaMaker
+npm install
 npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
