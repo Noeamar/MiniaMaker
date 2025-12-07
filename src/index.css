@@ -4,27 +4,30 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import url("https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Work+Sans&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Lora&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inconsolata&display=swap");
 
 @layer base {
   :root {
     /* YouTube Theme - Light Mode */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 7%;
+    --background: 0 0% 78.8235%;
+    --foreground: 0 0% 0%;
 
-    --card: 0 0% 100%;
+    --card: 0 0% 99.6078%;
     --card-foreground: 0 0% 7%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 7%;
 
     --primary: 0 100% 50%;
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 210 40% 98.0392%;
 
     --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
+    --secondary-foreground: 210 40% 98.0392%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 217 32.5843% 17.451%;
+    --muted-foreground: 221 66.6667% 58.8235%;
 
     --accent: 0 0% 96%;
     --accent-foreground: 0 100% 50%;
@@ -32,7 +35,7 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 90%;
+    --border: 214 31.8182% 91.3725%;
     --input: 0 0% 90%;
     --ring: 0 100% 50%;
 
@@ -58,8 +61,8 @@
     --sidebar-border: 0 0% 90%;
     --sidebar-ring: 0 100% 50%;
 
-    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Work Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Work Sans", ui-sans-serif, system-ui, sans-serif;
   }
 
   .dark {
