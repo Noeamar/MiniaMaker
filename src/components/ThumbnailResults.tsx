@@ -25,19 +25,19 @@ export function ThumbnailResults({
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `thumbnail-${thumbnail.id}.png`;
+      a.download = `miniature-youtube-${thumbnail.id}.png`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast.success("Thumbnail downloaded!");
+      toast.success("Miniature téléchargée !");
     } catch (error) {
-      toast.error("Failed to download thumbnail");
+      toast.error("Échec du téléchargement");
     }
   };
 
   const handleSavePrompt = (thumbnail: GeneratedThumbnail) => {
-    toast.success("Prompt saved as template!");
+    toast.success("Prompt sauvegardé comme template !");
   };
 
   if (thumbnails.length === 0) {
@@ -45,10 +45,10 @@ export function ThumbnailResults({
   }
 
   return (
-    <Card variant="elevated" className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+    <Card className="border-border opacity-0 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Generated Thumbnails</CardTitle>
+          <CardTitle className="text-lg">Miniatures Générées</CardTitle>
           <Button
             variant="outline"
             size="sm"
@@ -60,7 +60,7 @@ export function ThumbnailResults({
             ) : (
               <RefreshCw className="w-4 h-4" />
             )}
-            <span className="ml-2">Regenerate</span>
+            <span className="ml-2">Régénérer</span>
           </Button>
         </div>
       </CardHeader>
@@ -77,7 +77,7 @@ export function ThumbnailResults({
             >
               <img
                 src={thumbnail.url}
-                alt="Generated thumbnail"
+                alt="Miniature YouTube générée"
                 className="w-full h-full object-cover"
               />
               
@@ -88,32 +88,32 @@ export function ThumbnailResults({
                     <Button
                       variant="secondary"
                       size="icon"
-                      className="w-8 h-8 bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                      className="w-8 h-8 bg-background/20 backdrop-blur-sm hover:bg-background/30"
                       onClick={() => onToggleFavorite(thumbnail.id)}
                     >
                       <Heart
                         className={cn(
                           "w-4 h-4",
-                          thumbnail.isFavorite ? "fill-red-500 text-red-500" : "text-white"
+                          thumbnail.isFavorite ? "fill-primary text-primary" : "text-primary-foreground"
                         )}
                       />
                     </Button>
                     <Button
                       variant="secondary"
                       size="icon"
-                      className="w-8 h-8 bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                      className="w-8 h-8 bg-background/20 backdrop-blur-sm hover:bg-background/30"
                       onClick={() => handleDownload(thumbnail)}
                     >
-                      <Download className="w-4 h-4 text-white" />
+                      <Download className="w-4 h-4 text-primary-foreground" />
                     </Button>
                   </div>
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="w-8 h-8 bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                    className="w-8 h-8 bg-background/20 backdrop-blur-sm hover:bg-background/30"
                     onClick={() => handleSavePrompt(thumbnail)}
                   >
-                    <Save className="w-4 h-4 text-white" />
+                    <Save className="w-4 h-4 text-primary-foreground" />
                   </Button>
                 </div>
               </div>
@@ -121,7 +121,7 @@ export function ThumbnailResults({
               {/* Favorite indicator */}
               {thumbnail.isFavorite && (
                 <div className="absolute top-3 right-3">
-                  <Heart className="w-5 h-5 fill-red-500 text-red-500 drop-shadow-lg" />
+                  <Heart className="w-5 h-5 fill-primary text-primary drop-shadow-lg" />
                 </div>
               )}
             </div>

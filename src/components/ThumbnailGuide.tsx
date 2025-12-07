@@ -4,32 +4,32 @@ import { Eye, Heart, Type, Contrast } from "lucide-react";
 const tips = [
   {
     icon: Eye,
-    title: "Clear Main Subject",
-    description: "Make your focal point instantly recognizable",
+    title: "Sujet principal clair",
+    description: "Rendez votre point focal immédiatement reconnaissable",
   },
   {
     icon: Heart,
-    title: "Visible Emotion",
-    description: "Express feelings through faces and colors",
+    title: "Émotion visible",
+    description: "Exprimez les sentiments à travers les visages et couleurs",
   },
   {
     icon: Type,
-    title: "Short, Readable Text",
-    description: "3-5 words max, large and bold",
+    title: "Texte court et lisible",
+    description: "3-5 mots max, gros et en gras",
   },
   {
     icon: Contrast,
-    title: "Strong Contrast",
-    description: "Make elements pop with color differences",
+    title: "Contraste fort",
+    description: "Faites ressortir les éléments avec des couleurs contrastées",
   },
 ];
 
 export function ThumbnailGuide() {
   return (
-    <Card variant="outline" className="bg-muted/30 opacity-0 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+    <Card className="bg-muted/30 border-border opacity-0 animate-fade-in" style={{ animationDelay: '0.1s' }}>
       <CardContent className="p-4">
         <h3 className="font-semibold text-sm mb-3 text-foreground">
-          ✨ 4 Key Elements of a High-Performing Thumbnail
+          ✨ Les 4 Éléments Clés d'une Miniature YouTube Performante
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {tips.map((tip, index) => {
