@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { ModeSelector } from "@/components/ModeSelector";
 import { GuidedTemplateEditor } from "@/components/GuidedTemplateEditor";
@@ -6,9 +7,23 @@ import { FreePromptEditor } from "@/components/FreePromptEditor";
 import { AssistedWizard } from "@/components/AssistedWizard";
 import { ThumbnailResults } from "@/components/ThumbnailResults";
 import { ThumbnailGuide } from "@/components/ThumbnailGuide";
-import { InputMode, TemplateData, UploadedImage, GeneratedThumbnail } from "@/types/thumbnail";
+import { ModelSelector } from "@/components/ModelSelector";
+import { FormatSettings } from "@/components/FormatSettings";
+import { GenerationProgress } from "@/components/GenerationProgress";
+import { 
+  InputMode, 
+  TemplateData, 
+  UploadedImage, 
+  GeneratedThumbnail,
+  AIModel,
+  FormatSettings as FormatSettingsType,
+  DEFAULT_FORMAT_SETTINGS 
+} from "@/types/thumbnail";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { User, LogOut } from "lucide-react";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 
 const defaultTemplate: TemplateData = {
   name: 'Template Sans Titre',
@@ -21,12 +36,33 @@ const defaultTemplate: TemplateData = {
 };
 
 export default function Index() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [mode, setMode] = useState<InputMode>('guided');
   const [template, setTemplate] = useState<TemplateData>(defaultTemplate);
   const [freePrompt, setFreePrompt] = useState('');
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [thumbnails, setThumbnails] = useState<GeneratedThumbnail[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<AIModel>('google/gemini-2.5-flash-image-preview');
+  const [formatSettings, setFormatSettings] = useState<FormatSettingsType>(DEFAULT_FORMAT_SETTINGS);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("Déconnexion réussie");
+  };
 
   const buildPromptFromTemplate = (template: TemplateData): string => {
     const parts = [];
@@ -65,8 +101,16 @@ export default function Index() {
         return;
       }
 
+      // Collect image URLs
+      const imageUrls = images.map(img => img.url).filter(url => url && !url.startsWith('blob:'));
+
       const { data, error } = await supabase.functions.invoke('generate-thumbnail', {
-        body: { prompt }
+        body: { 
+          prompt,
+          model: selectedModel,
+          images: imageUrls,
+          format: formatSettings
+        }
       });
 
       if (error) {
@@ -89,7 +133,7 @@ export default function Index() {
           createdAt: new Date(),
           isFavorite: false,
         })));
-        toast.success("Miniatures générées avec succès !");
+        toast.success(`${data.thumbnails.length} miniatures générées avec ${data.model ? 'succès' : 'succès'} !`);
       } else {
         toast.error("Aucune miniature générée. Veuillez réessayer.");
       }
@@ -116,6 +160,28 @@ export default function Index() {
       <Header />
       
       <main className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Auth Status */}
+        <div className="flex justify-end mb-4">
+          {user ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">
+                {user.email}
+              </span>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Déconnexion
+              </Button>
+            </div>
+          ) : (
+            <Link to="/auth">
+              <Button variant="outline" size="sm">
+                <User className="w-4 h-4 mr-2" />
+                Connexion
+              </Button>
+            </Link>
+          )}
+        </div>
+
         {/* Hero Section */}
         <div className="text-center mb-10 opacity-0 animate-fade-in-up">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 font-display">
@@ -130,6 +196,16 @@ export default function Index() {
         {/* Guide */}
         <div className="mb-8">
           <ThumbnailGuide />
+        </div>
+
+        {/* Model Selector */}
+        <div className="mb-8">
+          <ModelSelector selectedModel={selectedModel} onModelChange={setSelectedModel} />
+        </div>
+
+        {/* Format Settings */}
+        <div className="mb-8">
+          <FormatSettings settings={formatSettings} onSettingsChange={setFormatSettings} />
         </div>
 
         {/* Mode Selection */}
@@ -174,6 +250,13 @@ export default function Index() {
             />
           )}
         </div>
+
+        {/* Progress Bar */}
+        {isGenerating && (
+          <div className="mb-8">
+            <GenerationProgress isGenerating={isGenerating} />
+          </div>
+        )}
 
         {/* Results */}
         <ThumbnailResults

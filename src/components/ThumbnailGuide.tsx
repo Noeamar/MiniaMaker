@@ -1,49 +1,52 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Eye, Heart, Type, Contrast } from "lucide-react";
+import { Target, Smile, MessageSquare, Zap } from "lucide-react";
 
 const tips = [
   {
-    icon: Eye,
-    title: "Sujet principal clair",
-    description: "Rendez votre point focal immédiatement reconnaissable",
+    icon: Target,
+    title: "Point focal",
+    color: "text-red-500",
+    bgColor: "bg-red-500/10",
   },
   {
-    icon: Heart,
-    title: "Émotion visible",
-    description: "Exprimez les sentiments à travers les visages et couleurs",
+    icon: Smile,
+    title: "Émotion forte",
+    color: "text-amber-500",
+    bgColor: "bg-amber-500/10",
   },
   {
-    icon: Type,
-    title: "Texte court et lisible",
-    description: "3-5 mots max, gros et en gras",
+    icon: MessageSquare,
+    title: "Texte court",
+    color: "text-blue-500",
+    bgColor: "bg-blue-500/10",
   },
   {
-    icon: Contrast,
-    title: "Contraste fort",
-    description: "Faites ressortir les éléments avec des couleurs contrastées",
+    icon: Zap,
+    title: "Contraste",
+    color: "text-green-500",
+    bgColor: "bg-green-500/10",
   },
 ];
 
 export function ThumbnailGuide() {
   return (
-    <Card className="bg-muted/30 border-border opacity-0 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-      <CardContent className="p-4">
-        <h3 className="font-semibold text-sm mb-3 text-foreground">
-          ✨ Les 4 Éléments Clés d'une Miniature YouTube Performante
+    <Card className="bg-muted/30 border-border/50 opacity-0 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+      <CardContent className="p-5">
+        <h3 className="font-semibold text-sm mb-4 text-center text-muted-foreground uppercase tracking-wider">
+          Les 4 Éléments Clés
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-4">
           {tips.map((tip, index) => {
             const Icon = tip.icon;
             return (
               <div
                 key={index}
-                className="flex items-start gap-2 text-sm"
+                className="flex flex-col items-center gap-2 text-center"
               >
-                <Icon className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                <div>
-                  <p className="font-medium text-foreground text-xs">{tip.title}</p>
-                  <p className="text-muted-foreground text-xs">{tip.description}</p>
+                <div className={`p-3 rounded-xl ${tip.bgColor}`}>
+                  <Icon className={`w-7 h-7 ${tip.color}`} />
                 </div>
+                <p className="font-medium text-foreground text-sm">{tip.title}</p>
               </div>
             );
           })}
