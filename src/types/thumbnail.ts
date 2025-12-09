@@ -5,6 +5,8 @@ export type AIModel = 'google/gemini-2.5-flash-lite' | 'google/gemini-2.5-flash-
 export type ThumbnailRatio = '16:9' | '1:1' | '9:16' | 'custom';
 export type ThumbnailResolution = '720p' | '1080p' | '4K';
 
+export type SubscriptionPlan = 'free' | 'starter' | 'pro' | 'unlimited';
+
 export interface TemplateData {
   id?: string;
   name: string;
@@ -51,6 +53,45 @@ export interface FormatSettings {
 export interface GenerationSettings {
   model: AIModel;
   format: FormatSettings;
+}
+
+export interface Conversation {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationMessage {
+  id: string;
+  conversation_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  image_urls: string[];
+  model_used: string | null;
+  settings: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface UserProfile {
+  id: string;
+  user_id: string;
+  credits: number;
+  subscription_tier: string;
+  subscription_plan: SubscriptionPlan;
+  daily_generations_nano: number;
+  daily_generations_gemini: number;
+  last_generation_date: string;
+}
+
+export interface SubscriptionPlanInfo {
+  id: string;
+  name: string;
+  plan_type: SubscriptionPlan;
+  price_monthly: number;
+  nano_daily_limit: number | null;
+  gemini_daily_limit: number | null;
+  features: { description: string };
 }
 
 export const AI_MODELS: { value: AIModel; label: string; description: string; icon: string }[] = [
