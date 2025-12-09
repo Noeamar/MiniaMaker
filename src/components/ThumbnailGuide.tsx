@@ -30,12 +30,12 @@ const tips = [
 
 export function ThumbnailGuide() {
   return (
-    <Card className="bg-muted/30 border-border/50 opacity-0 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+    <Card className="bg-secondary/30 border-border/50 opacity-0 animate-fade-in" style={{ animationDelay: '0.1s' }}>
       <CardContent className="p-5">
         <h3 className="font-semibold text-sm mb-4 text-center text-muted-foreground uppercase tracking-wider">
           Les 4 Éléments Clés
         </h3>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {tips.map((tip, index) => {
             const Icon = tip.icon;
             return (
