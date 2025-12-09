@@ -1,290 +1,260 @@
-import { useState, useEffect } from "react";
-import { Header } from "@/components/Header";
-import { ModeSelector } from "@/components/ModeSelector";
-import { GuidedTemplateEditor } from "@/components/GuidedTemplateEditor";
-import { FreePromptEditor } from "@/components/FreePromptEditor";
-import { AssistedWizard } from "@/components/AssistedWizard";
-import { ThumbnailResults } from "@/components/ThumbnailResults";
-import { ThumbnailGuide } from "@/components/ThumbnailGuide";
-import { ModelSelector } from "@/components/ModelSelector";
-import { FormatSettingsPopover } from "@/components/FormatSettingsPopover";
-import { GenerationProgress } from "@/components/GenerationProgress";
-import { 
-  InputMode, 
-  TemplateData, 
-  UploadedImage, 
-  GeneratedThumbnail,
-  AIModel,
-  FormatSettings as FormatSettingsType,
-  DEFAULT_FORMAT_SETTINGS 
-} from "@/types/thumbnail";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
-import { User as SupabaseUser } from "@supabase/supabase-js";
-
-const defaultTemplate: TemplateData = {
-  name: 'Template Sans Titre',
-  videoContext: '',
-  objective: '',
-  mainSubject: '',
-  emotion: '',
-  shortText: '',
-  visualStyle: '',
-};
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Header } from '@/components/Header';
+import { ConversationSidebar } from '@/components/ConversationSidebar';
+import { ChatArea } from '@/components/ChatArea';
+import { BillingDialog } from '@/components/BillingDialog';
+import { useAuth } from '@/hooks/useAuth';
+import { useConversations } from '@/hooks/useConversations';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { AIModel, FormatSettings, UploadedImage, SubscriptionPlan } from '@/types/thumbnail';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Play, Sparkles } from 'lucide-react';
 
 export default function Index() {
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [mode, setMode] = useState<InputMode>('guided');
-  const [template, setTemplate] = useState<TemplateData>(defaultTemplate);
-  const [freePrompt, setFreePrompt] = useState('');
-  const [images, setImages] = useState<UploadedImage[]>([]);
-  const [thumbnails, setThumbnails] = useState<GeneratedThumbnail[]>([]);
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { 
+    conversations, 
+    currentConversation, 
+    messages, 
+    createConversation, 
+    selectConversation, 
+    deleteConversation,
+    addMessage 
+  } = useConversations(user?.id);
+  const { 
+    profile, 
+    plans, 
+    getRemainingGenerations, 
+    checkGenerationLimit, 
+    incrementGenerationCount,
+    updateSubscription 
+  } = useUserProfile(user?.id);
+
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<AIModel>('google/gemini-2.5-flash-image-preview');
-  const [formatSettings, setFormatSettings] = useState<FormatSettingsType>(DEFAULT_FORMAT_SETTINGS);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const [billingOpen, setBillingOpen] = useState(false);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     toast.success("Déconnexion réussie");
   };
 
-  const buildPromptFromTemplate = (template: TemplateData): string => {
-    const parts = [];
-    
-    if (template.mainSubject) {
-      parts.push(`Sujet principal: ${template.mainSubject}`);
-    }
-    if (template.emotion) {
-      parts.push(`Émotion/Ton: ${template.emotion}`);
-    }
-    if (template.shortText) {
-      parts.push(`Texte à afficher: "${template.shortText}"`);
-    }
-    if (template.visualStyle) {
-      parts.push(`Style visuel: ${template.visualStyle}`);
-    }
-    if (template.videoContext) {
-      parts.push(`Contexte: ${template.videoContext}`);
-    }
-    if (template.objective) {
-      parts.push(`Objectif: ${template.objective}`);
-    }
-
-    return parts.join('. ');
+  const fileToBase64 = (file: File): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
   };
 
-  const handleGenerate = async () => {
+  const handleSendMessage = async (
+    prompt: string, 
+    images: UploadedImage[], 
+    model: AIModel, 
+    format: FormatSettings
+  ) => {
+    if (!user) {
+      toast.error("Veuillez vous connecter pour générer des miniatures");
+      navigate('/auth');
+      return;
+    }
+
+    // Check generation limit
+    const limitCheck = await checkGenerationLimit(model);
+    if (!limitCheck.allowed) {
+      toast.error(limitCheck.error || "Limite quotidienne atteinte");
+      setBillingOpen(true);
+      return;
+    }
+
     setIsGenerating(true);
-    
+
     try {
-      const prompt = mode === 'free' ? freePrompt : buildPromptFromTemplate(template);
-      
-      if (!prompt.trim()) {
-        toast.error("Veuillez remplir au moins un champ");
-        setIsGenerating(false);
-        return;
+      // Create conversation if none exists
+      let conversation = currentConversation;
+      if (!conversation) {
+        conversation = await createConversation();
+        if (!conversation) {
+          toast.error("Erreur lors de la création de la conversation");
+          setIsGenerating(false);
+          return;
+        }
       }
 
-      // Collect all image URLs - both uploaded and blob URLs need to be converted
+      // Add user message
+      await addMessage('user', prompt, [], null, { model, format });
+
+      // Collect all image URLs
       const imageUrls: string[] = [];
-      
       for (const img of images) {
         if (img.url && !img.url.startsWith('blob:')) {
           imageUrls.push(img.url);
         } else if (img.file) {
-          // Convert blob to base64
           const base64 = await fileToBase64(img.file);
-          if (base64) {
-            imageUrls.push(base64);
-          }
+          if (base64) imageUrls.push(base64);
         }
       }
 
-      console.log('Sending images to API:', imageUrls.length);
-
+      // Call generation API
       const { data, error } = await supabase.functions.invoke('generate-thumbnail', {
         body: { 
           prompt,
-          model: selectedModel,
+          model,
           images: imageUrls,
-          format: formatSettings
+          format
         }
       });
 
       if (error) {
         console.error('Erreur génération:', error);
         if (error.message?.includes('429')) {
-          toast.error("Limite de requêtes atteinte. Veuillez réessayer dans quelques instants.");
+          toast.error("Limite de requêtes atteinte. Veuillez réessayer.");
         } else if (error.message?.includes('402')) {
-          toast.error("Crédits épuisés. Veuillez recharger votre compte.");
+          toast.error("Crédits épuisés.");
         } else {
-          toast.error("Erreur lors de la génération. Veuillez réessayer.");
+          toast.error("Erreur lors de la génération.");
         }
+        await addMessage('assistant', "Désolé, une erreur est survenue lors de la génération.");
         return;
       }
 
+      // Increment usage count
+      await incrementGenerationCount(model);
+
       if (data?.thumbnails && data.thumbnails.length > 0) {
-        setThumbnails(data.thumbnails.map((url: string) => ({
-          id: crypto.randomUUID(),
-          url,
-          prompt,
-          createdAt: new Date(),
-          isFavorite: false,
-        })));
+        await addMessage(
+          'assistant', 
+          `Voici ${data.thumbnails.length} miniature${data.thumbnails.length > 1 ? 's' : ''} générée${data.thumbnails.length > 1 ? 's' : ''} !`,
+          data.thumbnails,
+          model,
+          { format }
+        );
         toast.success(`${data.thumbnails.length} miniatures générées !`);
       } else {
-        toast.error("Aucune miniature générée. Veuillez réessayer.");
+        await addMessage('assistant', "Aucune miniature n'a pu être générée. Veuillez réessayer avec une description différente.");
+        toast.error("Aucune miniature générée.");
       }
     } catch (error) {
       console.error('Erreur:', error);
-      toast.error("Erreur de connexion. Veuillez réessayer.");
+      toast.error("Erreur de connexion.");
+      await addMessage('assistant', "Erreur de connexion au serveur.");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const fileToBase64 = (file: File): Promise<string | null> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        resolve(reader.result as string);
-      };
-      reader.onerror = () => {
-        resolve(null);
-      };
-      reader.readAsDataURL(file);
-    });
+  const getRemainingForModel = (model: AIModel): number => {
+    const { remaining } = getRemainingGenerations(model);
+    return remaining;
   };
 
-  const handleToggleFavorite = (id: string) => {
-    setThumbnails(thumbnails.map(t => 
-      t.id === id ? { ...t, isFavorite: !t.isFavorite } : t
-    ));
-  };
+  // Not authenticated view
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header 
+          isAuthenticated={false}
+          onLogout={handleLogout}
+        />
+        
+        <main className="container mx-auto px-4 py-16 max-w-4xl">
+          <div className="text-center space-y-8">
+            <div className="w-20 h-20 mx-auto rounded-2xl bg-primary flex items-center justify-center">
+              <Play className="w-10 h-10 text-primary-foreground fill-current" />
+            </div>
+            
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+                Créez des <span className="text-gradient">Miniatures YouTube</span> Époustouflantes
+              </h1>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Générez des miniatures YouTube performantes grâce à l'IA. 
+                Connectez-vous pour commencer.
+              </p>
+            </div>
 
-  const handleWizardComplete = (wizardTemplate: TemplateData) => {
-    setTemplate(wizardTemplate);
-  };
+            <div className="flex gap-4 justify-center">
+              <Link to="/auth">
+                <Button size="lg" className="gap-2">
+                  <Sparkles className="w-5 h-5" />
+                  Commencer gratuitement
+                </Button>
+              </Link>
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+              <div className="p-6 rounded-xl bg-secondary/30 border border-border/50">
+                <div className="text-3xl mb-3">⚡</div>
+                <h3 className="font-semibold mb-2">3 modèles IA</h3>
+                <p className="text-sm text-muted-foreground">
+                  Du plus rapide au plus puissant, choisissez le modèle adapté à vos besoins.
+                </p>
+              </div>
+              <div className="p-6 rounded-xl bg-secondary/30 border border-border/50">
+                <div className="text-3xl mb-3">💬</div>
+                <h3 className="font-semibold mb-2">Interface conversationnelle</h3>
+                <p className="text-sm text-muted-foreground">
+                  Décrivez vos miniatures naturellement, comme dans une conversation.
+                </p>
+              </div>
+              <div className="p-6 rounded-xl bg-secondary/30 border border-border/50">
+                <div className="text-3xl mb-3">📁</div>
+                <h3 className="font-semibold mb-2">Historique complet</h3>
+                <p className="text-sm text-muted-foreground">
+                  Retrouvez toutes vos conversations et générations passées.
+                </p>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Authenticated view with chat interface
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen flex flex-col bg-background">
       <Header 
-        isAuthenticated={!!user} 
-        userEmail={user?.email}
+        isAuthenticated={true}
+        userEmail={user.email}
         onLogout={handleLogout}
+        onOpenBilling={() => setBillingOpen(true)}
       />
       
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Hero Section */}
-        <div className="text-center mb-10 opacity-0 animate-fade-in-up">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 font-display">
-            Créez des <span className="text-gradient">Miniatures YouTube</span> Époustouflantes
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Générez des miniatures YouTube performantes grâce à l'IA. 
-            Choisissez votre mode de création et laissez la magie opérer.
-          </p>
-        </div>
-
-        {/* Guide */}
-        <div className="mb-8">
-          <ThumbnailGuide />
-        </div>
-
-        {/* Mode Selection */}
-        <div className="mb-8">
-          <h2 className="text-sm font-medium text-muted-foreground mb-4 uppercase tracking-wider">
-            Choisissez votre mode
-          </h2>
-          <ModeSelector selectedMode={mode} onModeChange={setMode} />
-        </div>
-
-        {/* Editor based on mode */}
-        <div className="mb-8">
-          {mode === 'guided' && (
-            <GuidedTemplateEditor
-              template={template}
-              onTemplateChange={setTemplate}
-              images={images}
-              onImagesChange={setImages}
-              onGenerate={handleGenerate}
-              isGenerating={isGenerating}
-            />
-          )}
-          
-          {mode === 'free' && (
-            <FreePromptEditor
-              prompt={freePrompt}
-              onPromptChange={setFreePrompt}
-              images={images}
-              onImagesChange={setImages}
-              onGenerate={handleGenerate}
-              isGenerating={isGenerating}
-            />
-          )}
-          
-          {mode === 'assisted' && (
-            <AssistedWizard
-              onComplete={handleWizardComplete}
-              images={images}
-              onImagesChange={setImages}
-              onGenerate={handleGenerate}
-              isGenerating={isGenerating}
-            />
-          )}
-        </div>
-
-        {/* Generation Controls - Model, Format, Generate Button */}
-        <div className="mb-8 flex flex-wrap items-center gap-3 justify-center">
-          <ModelSelector selectedModel={selectedModel} onModelChange={setSelectedModel} />
-          <FormatSettingsPopover settings={formatSettings} onSettingsChange={setFormatSettings} />
-          <Button 
-            onClick={handleGenerate} 
-            disabled={isGenerating}
-            size="lg"
-            className="gap-2"
-          >
-            <Sparkles className="w-4 h-4" />
-            Générer les miniatures
-          </Button>
-        </div>
-
-        {/* Progress Bar */}
-        {isGenerating && (
-          <div className="mb-8">
-            <GenerationProgress isGenerating={isGenerating} />
-          </div>
-        )}
-
-        {/* Results */}
-        <ThumbnailResults
-          thumbnails={thumbnails}
-          onToggleFavorite={handleToggleFavorite}
-          onRegenerate={handleGenerate}
-          isRegenerating={isGenerating}
+      <div className="flex-1 flex overflow-hidden">
+        <ConversationSidebar
+          conversations={conversations}
+          currentConversation={currentConversation}
+          onNewConversation={createConversation}
+          onSelectConversation={selectConversation}
+          onDeleteConversation={deleteConversation}
+          onOpenBilling={() => setBillingOpen(true)}
+          remainingNano={getRemainingForModel('google/gemini-2.5-flash-image-preview')}
+          remainingGemini={getRemainingForModel('google/gemini-3-pro-image-preview')}
+          isAuthenticated={true}
         />
-      </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border/50 py-6 mt-16">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>Fait avec ❤️ pour les créateurs de contenu</p>
-        </div>
-      </footer>
+        <ChatArea
+          messages={messages}
+          isGenerating={isGenerating}
+          hasConversation={!!currentConversation}
+          onSend={handleSendMessage}
+          remainingForModel={getRemainingForModel}
+          disabled={!currentConversation}
+        />
+      </div>
+
+      <BillingDialog
+        open={billingOpen}
+        onOpenChange={setBillingOpen}
+        plans={plans}
+        currentPlan={(profile?.subscription_plan as SubscriptionPlan) || 'free'}
+        onSelectPlan={updateSubscription}
+      />
     </div>
   );
 }
