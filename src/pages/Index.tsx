@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { ModeSelector } from "@/components/ModeSelector";
 import { GuidedTemplateEditor } from "@/components/GuidedTemplateEditor";
@@ -8,7 +7,7 @@ import { AssistedWizard } from "@/components/AssistedWizard";
 import { ThumbnailResults } from "@/components/ThumbnailResults";
 import { ThumbnailGuide } from "@/components/ThumbnailGuide";
 import { ModelSelector } from "@/components/ModelSelector";
-import { FormatSettings } from "@/components/FormatSettings";
+import { FormatSettingsPopover } from "@/components/FormatSettingsPopover";
 import { GenerationProgress } from "@/components/GenerationProgress";
 import { 
   InputMode, 
@@ -22,7 +21,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { User, LogOut } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 
 const defaultTemplate: TemplateData = {
@@ -36,7 +35,6 @@ const defaultTemplate: TemplateData = {
 };
 
 export default function Index() {
-  const navigate = useNavigate();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [mode, setMode] = useState<InputMode>('guided');
   const [template, setTemplate] = useState<TemplateData>(defaultTemplate);
@@ -101,8 +99,22 @@ export default function Index() {
         return;
       }
 
-      // Collect image URLs
-      const imageUrls = images.map(img => img.url).filter(url => url && !url.startsWith('blob:'));
+      // Collect all image URLs - both uploaded and blob URLs need to be converted
+      const imageUrls: string[] = [];
+      
+      for (const img of images) {
+        if (img.url && !img.url.startsWith('blob:')) {
+          imageUrls.push(img.url);
+        } else if (img.file) {
+          // Convert blob to base64
+          const base64 = await fileToBase64(img.file);
+          if (base64) {
+            imageUrls.push(base64);
+          }
+        }
+      }
+
+      console.log('Sending images to API:', imageUrls.length);
 
       const { data, error } = await supabase.functions.invoke('generate-thumbnail', {
         body: { 
@@ -133,7 +145,7 @@ export default function Index() {
           createdAt: new Date(),
           isFavorite: false,
         })));
-        toast.success(`${data.thumbnails.length} miniatures générées avec ${data.model ? 'succès' : 'succès'} !`);
+        toast.success(`${data.thumbnails.length} miniatures générées !`);
       } else {
         toast.error("Aucune miniature générée. Veuillez réessayer.");
       }
@@ -143,6 +155,19 @@ export default function Index() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const fileToBase64 = (file: File): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve(reader.result as string);
+      };
+      reader.onerror = () => {
+        resolve(null);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleToggleFavorite = (id: string) => {
@@ -157,31 +182,13 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header 
+        isAuthenticated={!!user} 
+        userEmail={user?.email}
+        onLogout={handleLogout}
+      />
       
       <main className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Auth Status */}
-        <div className="flex justify-end mb-4">
-          {user ? (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground">
-                {user.email}
-              </span>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Déconnexion
-              </Button>
-            </div>
-          ) : (
-            <Link to="/auth">
-              <Button variant="outline" size="sm">
-                <User className="w-4 h-4 mr-2" />
-                Connexion
-              </Button>
-            </Link>
-          )}
-        </div>
-
         {/* Hero Section */}
         <div className="text-center mb-10 opacity-0 animate-fade-in-up">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 font-display">
@@ -196,16 +203,6 @@ export default function Index() {
         {/* Guide */}
         <div className="mb-8">
           <ThumbnailGuide />
-        </div>
-
-        {/* Model Selector */}
-        <div className="mb-8">
-          <ModelSelector selectedModel={selectedModel} onModelChange={setSelectedModel} />
-        </div>
-
-        {/* Format Settings */}
-        <div className="mb-8">
-          <FormatSettings settings={formatSettings} onSettingsChange={setFormatSettings} />
         </div>
 
         {/* Mode Selection */}
@@ -249,6 +246,21 @@ export default function Index() {
               isGenerating={isGenerating}
             />
           )}
+        </div>
+
+        {/* Generation Controls - Model, Format, Generate Button */}
+        <div className="mb-8 flex flex-wrap items-center gap-3 justify-center">
+          <ModelSelector selectedModel={selectedModel} onModelChange={setSelectedModel} />
+          <FormatSettingsPopover settings={formatSettings} onSettingsChange={setFormatSettings} />
+          <Button 
+            onClick={handleGenerate} 
+            disabled={isGenerating}
+            size="lg"
+            className="gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            Générer les miniatures
+          </Button>
         </div>
 
         {/* Progress Bar */}
