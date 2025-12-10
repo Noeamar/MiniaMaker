@@ -14,6 +14,7 @@ interface ChatAreaProps {
   onSend: (prompt: string, images: UploadedImage[], model: AIModel, format: FormatSettings) => void;
   remainingForModel: (model: AIModel) => number;
   disabled?: boolean;
+  userId?: string;
 }
 
 export function ChatArea({ 
@@ -22,7 +23,8 @@ export function ChatArea({
   hasConversation,
   onSend, 
   remainingForModel,
-  disabled 
+  disabled,
+  userId
 }: ChatAreaProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -43,12 +45,10 @@ export function ChatArea({
               </div>
               <div>
                 <h2 className="text-2xl font-bold mb-2">
-                  {hasConversation ? 'Créez votre miniature' : 'Bienvenue sur MiniaMaker'}
+                  Créez votre miniature
                 </h2>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  {hasConversation 
-                    ? 'Décrivez la miniature YouTube que vous souhaitez créer. Ajoutez des images de référence si vous le souhaitez.'
-                    : 'Créez une nouvelle conversation pour commencer à générer des miniatures YouTube époustouflantes.'}
+                  Décrivez la miniature YouTube que vous souhaitez créer. Ajoutez des images de référence si vous le souhaitez.
                 </p>
               </div>
               
@@ -58,7 +58,7 @@ export function ChatArea({
             </div>
           ) : (
             messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
+              <ChatMessage key={message.id} message={message} userId={userId} />
             ))
           )}
 
@@ -70,14 +70,12 @@ export function ChatArea({
         </div>
       </ScrollArea>
 
-      {hasConversation && (
-        <ChatInput 
-          onSend={onSend}
-          isGenerating={isGenerating}
-          disabled={disabled}
-          remainingForModel={remainingForModel}
-        />
-      )}
+      <ChatInput 
+        onSend={onSend}
+        isGenerating={isGenerating}
+        disabled={disabled}
+        remainingForModel={remainingForModel}
+      />
     </div>
   );
 }
