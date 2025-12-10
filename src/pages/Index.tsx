@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { ConversationSidebar } from '@/components/ConversationSidebar';
@@ -7,11 +7,13 @@ import { BillingDialog } from '@/components/BillingDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { AIModel, FormatSettings, UploadedImage, SubscriptionPlan } from '@/types/thumbnail';
+import { AIModel, FormatSettings, UploadedImage, SubscriptionPlan, ConversationMessage, DEFAULT_FORMAT_SETTINGS } from '@/types/thumbnail';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Play, Sparkles } from 'lucide-react';
+
+const TRIAL_STORAGE_KEY = 'miniamaker_trial_used';
 
 export default function Index() {
   const navigate = useNavigate();
@@ -23,7 +25,9 @@ export default function Index() {
     createConversation, 
     selectConversation, 
     deleteConversation,
-    addMessage 
+    addMessage,
+    setCurrentConversation,
+    setMessages
   } = useConversations(user?.id);
   const { 
     profile, 
@@ -31,11 +35,18 @@ export default function Index() {
     getRemainingGenerations, 
     checkGenerationLimit, 
     incrementGenerationCount,
-    updateSubscription 
+    refetchProfile
   } = useUserProfile(user?.id);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [billingOpen, setBillingOpen] = useState(false);
+  
+  // Trial mode state (for non-authenticated users)
+  const [trialMessages, setTrialMessages] = useState<ConversationMessage[]>([]);
+  const [trialUsed, setTrialUsed] = useState(() => {
+    return localStorage.getItem(TRIAL_STORAGE_KEY) === 'true';
+  });
+  const [isTrialMode, setIsTrialMode] = useState(false);
 
   const handleLogout = async () => {
     await signOut();
@@ -57,36 +68,43 @@ export default function Index() {
     model: AIModel, 
     format: FormatSettings
   ) => {
+    // If not logged in, check trial
     if (!user) {
-      toast.error("Veuillez vous connecter pour générer des miniatures");
-      navigate('/auth');
-      return;
-    }
-
-    // Check generation limit
-    const limitCheck = await checkGenerationLimit(model);
-    if (!limitCheck.allowed) {
-      toast.error(limitCheck.error || "Limite quotidienne atteinte");
-      setBillingOpen(true);
-      return;
+      if (trialUsed) {
+        toast.error("Essai gratuit utilisé. Connectez-vous pour continuer.");
+        navigate('/auth');
+        return;
+      }
+    } else {
+      // Check generation limit for logged in users
+      const limitCheck = await checkGenerationLimit(model);
+      if (!limitCheck.allowed) {
+        toast.error(limitCheck.error || "Limite quotidienne atteinte");
+        setBillingOpen(true);
+        return;
+      }
     }
 
     setIsGenerating(true);
 
     try {
-      // Create conversation if none exists
-      let conversation = currentConversation;
-      if (!conversation) {
-        conversation = await createConversation();
-        if (!conversation) {
-          toast.error("Erreur lors de la création de la conversation");
-          setIsGenerating(false);
-          return;
-        }
-      }
+      // Create user message for display
+      const userMessage: ConversationMessage = {
+        id: crypto.randomUUID(),
+        conversation_id: currentConversation?.id || 'trial',
+        role: 'user',
+        content: prompt,
+        image_urls: [],
+        model_used: null,
+        settings: { model, format },
+        created_at: new Date().toISOString()
+      };
 
-      // Add user message
-      await addMessage('user', prompt, [], null, { model, format });
+      if (user && currentConversation) {
+        await addMessage('user', prompt, [], null, { model, format });
+      } else {
+        setTrialMessages(prev => [...prev, userMessage]);
+      }
 
       // Collect all image URLs
       const imageUrls: string[] = [];
@@ -118,41 +136,155 @@ export default function Index() {
         } else {
           toast.error("Erreur lors de la génération.");
         }
-        await addMessage('assistant', "Désolé, une erreur est survenue lors de la génération.");
+        
+        const errorMessage: ConversationMessage = {
+          id: crypto.randomUUID(),
+          conversation_id: currentConversation?.id || 'trial',
+          role: 'assistant',
+          content: "Désolé, une erreur est survenue lors de la génération.",
+          image_urls: [],
+          model_used: null,
+          settings: {},
+          created_at: new Date().toISOString()
+        };
+        
+        if (user && currentConversation) {
+          await addMessage('assistant', errorMessage.content);
+        } else {
+          setTrialMessages(prev => [...prev, errorMessage]);
+        }
         return;
       }
 
-      // Increment usage count
-      await incrementGenerationCount(model);
+      // Mark trial as used for non-authenticated users
+      if (!user) {
+        localStorage.setItem(TRIAL_STORAGE_KEY, 'true');
+        setTrialUsed(true);
+      } else {
+        // Increment usage count for authenticated users
+        await incrementGenerationCount(model);
+      }
 
       if (data?.thumbnails && data.thumbnails.length > 0) {
-        await addMessage(
-          'assistant', 
-          `Voici ${data.thumbnails.length} miniature${data.thumbnails.length > 1 ? 's' : ''} générée${data.thumbnails.length > 1 ? 's' : ''} !`,
-          data.thumbnails,
-          model,
-          { format }
-        );
+        const successMessage: ConversationMessage = {
+          id: crypto.randomUUID(),
+          conversation_id: currentConversation?.id || 'trial',
+          role: 'assistant',
+          content: `Voici ${data.thumbnails.length} miniature${data.thumbnails.length > 1 ? 's' : ''} générée${data.thumbnails.length > 1 ? 's' : ''} !`,
+          image_urls: data.thumbnails,
+          model_used: model,
+          settings: { format },
+          created_at: new Date().toISOString()
+        };
+
+        if (user && currentConversation) {
+          await addMessage(
+            'assistant', 
+            successMessage.content,
+            data.thumbnails,
+            model,
+            { format }
+          );
+        } else {
+          setTrialMessages(prev => [...prev, successMessage]);
+        }
         toast.success(`${data.thumbnails.length} miniatures générées !`);
       } else {
-        await addMessage('assistant', "Aucune miniature n'a pu être générée. Veuillez réessayer avec une description différente.");
+        const noResultMessage: ConversationMessage = {
+          id: crypto.randomUUID(),
+          conversation_id: currentConversation?.id || 'trial',
+          role: 'assistant',
+          content: "Aucune miniature n'a pu être générée. Veuillez réessayer avec une description différente.",
+          image_urls: [],
+          model_used: null,
+          settings: {},
+          created_at: new Date().toISOString()
+        };
+
+        if (user && currentConversation) {
+          await addMessage('assistant', noResultMessage.content);
+        } else {
+          setTrialMessages(prev => [...prev, noResultMessage]);
+        }
         toast.error("Aucune miniature générée.");
       }
     } catch (error) {
       console.error('Erreur:', error);
       toast.error("Erreur de connexion.");
-      await addMessage('assistant', "Erreur de connexion au serveur.");
     } finally {
       setIsGenerating(false);
     }
   };
 
   const getRemainingForModel = (model: AIModel): number => {
+    if (!user) {
+      // Trial mode: 1 free generation if not used
+      return trialUsed ? 0 : 1;
+    }
     const { remaining } = getRemainingGenerations(model);
     return remaining;
   };
 
-  // Not authenticated view
+  const handleNewConversation = async () => {
+    if (user) {
+      await createConversation();
+    } else {
+      // Start trial mode
+      setIsTrialMode(true);
+      setTrialMessages([]);
+    }
+  };
+
+  const handleStartTrial = () => {
+    setIsTrialMode(true);
+    setTrialMessages([]);
+  };
+
+  // Check for subscription success in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('subscription') === 'success') {
+      toast.success("Abonnement activé avec succès !");
+      refetchProfile();
+      window.history.replaceState({}, '', '/');
+    }
+  }, []);
+
+  // Not authenticated but in trial mode
+  if (!user && isTrialMode) {
+    return (
+      <div className="h-screen flex flex-col bg-background">
+        <Header 
+          isAuthenticated={false}
+          onLogout={handleLogout}
+        />
+        
+        <div className="flex-1 flex overflow-hidden">
+          <ChatArea
+            messages={trialMessages}
+            isGenerating={isGenerating}
+            hasConversation={true}
+            onSend={handleSendMessage}
+            remainingForModel={getRemainingForModel}
+            disabled={trialUsed}
+          />
+        </div>
+
+        {trialUsed && (
+          <div className="p-4 border-t border-border bg-secondary/30 text-center">
+            <p className="text-sm text-muted-foreground mb-2">
+              Vous avez utilisé votre essai gratuit. Connectez-vous pour continuer.
+            </p>
+            <Link to="/auth">
+              <Button>Se connecter</Button>
+            </Link>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Not authenticated landing page
   if (!user) {
     return (
       <div className="min-h-screen bg-background">
@@ -173,15 +305,18 @@ export default function Index() {
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                 Générez des miniatures YouTube performantes grâce à l'IA. 
-                Connectez-vous pour commencer.
+                Essayez gratuitement une génération maintenant.
               </p>
             </div>
 
             <div className="flex gap-4 justify-center">
+              <Button size="lg" className="gap-2" onClick={handleStartTrial}>
+                <Sparkles className="w-5 h-5" />
+                Essai gratuit
+              </Button>
               <Link to="/auth">
-                <Button size="lg" className="gap-2">
-                  <Sparkles className="w-5 h-5" />
-                  Commencer gratuitement
+                <Button size="lg" variant="outline">
+                  Se connecter
                 </Button>
               </Link>
             </div>
@@ -229,7 +364,7 @@ export default function Index() {
         <ConversationSidebar
           conversations={conversations}
           currentConversation={currentConversation}
-          onNewConversation={createConversation}
+          onNewConversation={handleNewConversation}
           onSelectConversation={selectConversation}
           onDeleteConversation={deleteConversation}
           onOpenBilling={() => setBillingOpen(true)}
@@ -245,6 +380,7 @@ export default function Index() {
           onSend={handleSendMessage}
           remainingForModel={getRemainingForModel}
           disabled={!currentConversation}
+          userId={user.id}
         />
       </div>
 
@@ -253,7 +389,7 @@ export default function Index() {
         onOpenChange={setBillingOpen}
         plans={plans}
         currentPlan={(profile?.subscription_plan as SubscriptionPlan) || 'free'}
-        onSelectPlan={updateSubscription}
+        onSubscriptionChange={refetchProfile}
       />
     </div>
   );
