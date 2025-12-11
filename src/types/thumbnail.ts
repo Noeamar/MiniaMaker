@@ -1,9 +1,11 @@
 export type InputMode = 'free' | 'guided' | 'assisted';
 
-export type AIModel = 'google/gemini-2.5-flash-lite' | 'google/gemini-2.5-flash-image-preview' | 'google/gemini-3-pro-image-preview';
+export type AIModel = 'google/gemini-2.0-basic-lite' | 'google/gemini-2.5-flash-image-preview' | 'google/gemini-3-pro-image-preview';
 
 export type ThumbnailRatio = '16:9' | '1:1' | '9:16' | 'custom';
 export type ThumbnailResolution = '720p' | '1080p' | '4K';
+
+export type SubscriptionPlan = 'free' | 'basic' | 'standard' | 'pro' | 'starter' | 'unlimited';
 
 export interface TemplateData {
   id?: string;
@@ -55,21 +57,21 @@ export interface GenerationSettings {
 
 export const AI_MODELS: { value: AIModel; label: string; description: string; icon: string }[] = [
   {
-    value: 'google/gemini-2.5-flash-lite',
-    label: 'Nano Banana Flash',
-    description: 'Rapide et économique',
+    value: 'google/gemini-2.0-basic-lite',
+    label: 'MiniaMaker Lite',
+    description: 'Le moins cher, rapide',
     icon: '⚡'
   },
   {
     value: 'google/gemini-2.5-flash-image-preview',
-    label: 'Nano Banana Pro',
+    label: 'MiniaMaker 2',
     description: 'Équilibré, recommandé',
     icon: '✨'
   },
   {
     value: 'google/gemini-3-pro-image-preview',
-    label: 'Gemini 3 Pro',
-    description: 'Nouvelle génération, qualité maximale',
+    label: 'MiniaMaker Pro',
+    description: 'Le plus cher, qualité maximale',
     icon: '🚀'
   }
 ];

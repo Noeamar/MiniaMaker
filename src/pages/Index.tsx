@@ -114,40 +114,306 @@ export default function Index() {
         }
       }
 
-      console.log('Sending images to API:', imageUrls.length);
+      // Call generation API using fetch directly to have better error handling
+      console.log('=== CALLING GENERATE-THUMBNAIL ===');
+      console.log('Request data:', { prompt, model, imagesCount: imageUrls.length, format });
+      
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      
+      console.log('Supabase config:', {
+        url: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
+        key: supabaseKey ? `${supabaseKey.substring(0, 20)}...` : 'MISSING'
+      });
+      
+      if (!supabaseUrl || !supabaseKey) {
+        console.error('Missing Supabase configuration!');
+        toast.error("Configuration manquante. Vérifiez vos variables d'environnement.");
+        return;
+      }
+      
+      const functionUrl = `${supabaseUrl}/functions/v1/generate-thumbnail`;
+      console.log('Function URL:', functionUrl);
+      
+      let data: any = null;
+      let error: any = null;
+      
+      try {
+        console.log('Sending fetch request...');
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`,
+            'apikey': supabaseKey,
+          },
+          body: JSON.stringify({
+            prompt,
+            model,
+            images: imageUrls,
+            format,
+            conversationHistory: user && currentConversation ? messages
+              .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+              .slice(-10) // Keep last 10 messages for context
+              .map(msg => ({
+                role: msg.role,
+                content: msg.content
+              })) : []
+          })
+        });
 
-      const { data, error } = await supabase.functions.invoke('generate-thumbnail', {
-        body: { 
-          prompt,
-          model: selectedModel,
-          images: imageUrls,
-          format: formatSettings
+        console.log('Response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+        
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
+        
+        if (!response.ok) {
+          // Extract error message from response body
+          const errorMsg = responseData.error || responseData.message || `HTTP ${response.status}`;
+          const errorDetails = responseData.details || responseData.parsedError || null;
+          
+          console.error('Error response from function:', {
+            status: response.status,
+            error: errorMsg,
+            details: errorDetails,
+            fullResponse: responseData
+          });
+          
+          error = {
+            message: errorMsg,
+            status: response.status,
+            context: { body: responseData, details: errorDetails }
+          };
+        } else {
+          data = responseData;
         }
+      } catch (fetchError: any) {
+        console.error('Fetch error:', fetchError);
+        error = {
+          message: fetchError.message || 'Erreur de connexion',
+          context: { originalError: fetchError }
+        };
+      }
+
+      console.log('Response received:', { 
+        hasData: !!data, 
+        hasError: !!error,
+        dataKeys: data ? Object.keys(data) : [],
+        errorMessage: error?.message,
+        errorStatus: error?.status
       });
 
-      if (error) {
-        console.error('Erreur génération:', error);
-        if (error.message?.includes('429')) {
-          toast.error("Limite de requêtes atteinte. Veuillez réessayer dans quelques instants.");
-        } else if (error.message?.includes('402')) {
-          toast.error("Crédits épuisés. Veuillez recharger votre compte.");
+      // Check if data contains an error (even if error is null)
+      if (data?.error) {
+        console.error('Error in response data:', data.error);
+        const errorMsg = data.error || 'Erreur inconnue';
+        
+        let toastMessage = "Erreur lors de la génération.";
+        if (errorMsg.includes('402') || errorMsg.includes('Quota') || errorMsg.includes('Crédits épuisés') || errorMsg.includes('recharger')) {
+          toastMessage = errorMsg.length > 150 ? errorMsg.substring(0, 150) + '...' : errorMsg;
+        } else if (errorMsg.includes('429')) {
+          toastMessage = "Limite de requêtes atteinte. Veuillez réessayer.";
+        } else if (errorMsg.includes('403')) {
+          toastMessage = "Clé API invalide ou permissions insuffisantes.";
         } else {
-          toast.error("Erreur lors de la génération. Veuillez réessayer.");
+          toastMessage = errorMsg.length > 150 ? errorMsg.substring(0, 150) + '...' : errorMsg;
+        }
+        
+        toast.error(toastMessage);
+        
+        const errorMessage: ConversationMessage = {
+          id: crypto.randomUUID(),
+          conversation_id: currentConversation?.id || 'trial',
+          role: 'assistant',
+          content: `Erreur: ${errorMsg}`,
+          image_urls: [],
+          model_used: null,
+          settings: {},
+          created_at: new Date().toISOString()
+        };
+        
+        try {
+          if (user && currentConversation) {
+            await addMessage('assistant', errorMessage.content);
+          } else {
+            setTrialMessages(prev => [...prev, errorMessage]);
+          }
+        } catch (msgError) {
+          console.error('Error adding error message:', msgError);
         }
         return;
       }
 
-      if (data?.thumbnails && data.thumbnails.length > 0) {
-        setThumbnails(data.thumbnails.map((url: string) => ({
+      if (error) {
+        console.error('Erreur génération:', error);
+        console.error('Error details:', {
+          message: error.message,
+          context: error.context,
+          name: error.name,
+          data: (error as any).data,
+          response: (error as any).response
+        });
+        
+        // Extract error message from various possible locations
+        let errorMessage = error.message || 'Erreur inconnue';
+        
+        // Try to extract from error.data (Supabase sometimes puts response body here)
+        if ((error as any).data) {
+          try {
+            const errorData = typeof (error as any).data === 'string' 
+              ? JSON.parse((error as any).data) 
+              : (error as any).data;
+            if (errorData?.error) {
+              errorMessage = errorData.error;
+            }
+          } catch (e) {
+            console.warn('Could not parse error.data:', e);
+          }
+        }
+        
+        // Try to extract from error.context.body
+        if (error.context?.body) {
+          try {
+            const errorBody = typeof error.context.body === 'string' 
+              ? JSON.parse(error.context.body) 
+              : error.context.body;
+            if (errorBody?.error) {
+              errorMessage = errorBody.error;
+            }
+          } catch (e) {
+            console.warn('Could not parse error context body:', e);
+          }
+        }
+        
+        // Try to extract from error.context.response
+        if (error.context?.response) {
+          try {
+            const responseData = typeof error.context.response === 'string' 
+              ? JSON.parse(error.context.response) 
+              : error.context.response;
+            if (responseData?.error) {
+              errorMessage = responseData.error;
+            }
+          } catch (e) {
+            console.warn('Could not parse error context response:', e);
+          }
+        }
+        
+        // If error message is the generic one, try to get more details
+        if (errorMessage === 'Edge Function returned a non-2xx status code' || errorMessage.includes('non-2xx')) {
+          // Try to fetch the error details from the response
+          errorMessage = 'Erreur lors de la génération. Vérifiez les logs pour plus de détails.';
+        }
+        
+        let toastMessage = "Erreur lors de la génération.";
+        if (errorMessage.includes('402') || errorMessage.includes('Quota') || errorMessage.includes('Crédits épuisés') || errorMessage.includes('recharger')) {
+          toastMessage = errorMessage.length > 150 ? errorMessage.substring(0, 150) + '...' : errorMessage;
+        } else if (errorMessage.includes('429')) {
+          toastMessage = "Limite de requêtes atteinte. Veuillez réessayer.";
+        } else if (errorMessage.includes('403')) {
+          toastMessage = "Clé API invalide ou permissions insuffisantes.";
+        } else if (errorMessage.length > 0) {
+          toastMessage = errorMessage.length > 150 ? errorMessage.substring(0, 150) + '...' : errorMessage;
+        }
+        
+        toast.error(toastMessage);
+        
+        const errorMsg: ConversationMessage = {
           id: crypto.randomUUID(),
-          url,
-          prompt,
-          createdAt: new Date(),
-          isFavorite: false,
-        })));
-        toast.success(`${data.thumbnails.length} miniatures générées !`);
+          conversation_id: currentConversation?.id || 'trial',
+          role: 'assistant',
+          content: `Erreur: ${errorMessage}`,
+          image_urls: [],
+          model_used: null,
+          settings: {},
+          created_at: new Date().toISOString()
+        };
+        
+        try {
+          if (user && currentConversation) {
+            await addMessage('assistant', errorMsg.content);
+          } else {
+            setTrialMessages(prev => [...prev, errorMsg]);
+          }
+        } catch (msgError) {
+          console.error('Error adding error message:', msgError);
+        }
+        return;
+      }
+
+      // Mark trial as used for non-authenticated users
+      if (!user) {
+        localStorage.setItem(TRIAL_STORAGE_KEY, 'true');
+        setTrialUsed(true);
       } else {
-        toast.error("Aucune miniature générée. Veuillez réessayer.");
+        // Increment usage count for authenticated users
+        await incrementGenerationCount(model);
+      }
+
+      // Process successful response
+      try {
+        if (data?.thumbnails && data.thumbnails.length > 0) {
+          const successMessage: ConversationMessage = {
+            id: crypto.randomUUID(),
+            conversation_id: currentConversation?.id || 'trial',
+            role: 'assistant',
+            content: `Voici ${data.thumbnails.length} miniature${data.thumbnails.length > 1 ? 's' : ''} générée${data.thumbnails.length > 1 ? 's' : ''} !`,
+            image_urls: data.thumbnails,
+            model_used: model,
+            settings: { format },
+            created_at: new Date().toISOString()
+          };
+
+          try {
+            if (user && currentConversation) {
+              await addMessage(
+                'assistant', 
+                successMessage.content,
+                data.thumbnails,
+                model,
+                { format }
+              );
+            } else {
+              setTrialMessages(prev => [...prev, successMessage]);
+            }
+            toast.success(`${data.thumbnails.length} miniatures générées !`);
+          } catch (msgError) {
+            console.error('Error adding success message:', msgError);
+            toast.success(`${data.thumbnails.length} miniatures générées !`);
+            // Still show success even if message addition fails
+          }
+        } else {
+          const noResultMessage: ConversationMessage = {
+            id: crypto.randomUUID(),
+            conversation_id: currentConversation?.id || 'trial',
+            role: 'assistant',
+            content: "Aucune miniature n'a pu être générée. Veuillez réessayer avec une description différente.",
+            image_urls: [],
+            model_used: null,
+            settings: {},
+            created_at: new Date().toISOString()
+          };
+
+          try {
+            if (user && currentConversation) {
+              await addMessage('assistant', noResultMessage.content);
+            } else {
+              setTrialMessages(prev => [...prev, noResultMessage]);
+            }
+            toast.error("Aucune miniature générée.");
+          } catch (msgError) {
+            console.error('Error adding no-result message:', msgError);
+            toast.error("Aucune miniature générée.");
+          }
+        }
+      } catch (processError) {
+        console.error('Error processing response:', processError);
+        toast.error("Erreur lors du traitement de la réponse.");
       }
     } catch (error) {
       console.error('Erreur:', error);
@@ -170,6 +436,22 @@ export default function Index() {
     });
   };
 
+  const getRemainingForModel = (model: AIModel): number => {
+    if (!user) {
+      // Trial mode: 1 free generation with medium model (2.5) if not used
+      if (trialUsed) {
+        return 0;
+      }
+      // Only allow medium model (2.5) for trial
+      if (model === 'google/gemini-2.5-flash-image-preview') {
+        return 1;
+      }
+      return 0;
+    }
+    const { remaining } = getRemainingGenerations(model);
+    return remaining;
+  };
+
   const handleToggleFavorite = (id: string) => {
     setThumbnails(thumbnails.map(t => 
       t.id === id ? { ...t, isFavorite: !t.isFavorite } : t
@@ -188,17 +470,19 @@ export default function Index() {
         onLogout={handleLogout}
       />
       
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Hero Section */}
-        <div className="text-center mb-10 opacity-0 animate-fade-in-up">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 font-display">
-            Créez des <span className="text-gradient">Miniatures YouTube</span> Époustouflantes
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Générez des miniatures YouTube performantes grâce à l'IA. 
-            Choisissez votre mode de création et laissez la magie opérer.
-          </p>
-        </div>
+      <div className="flex-1 flex overflow-hidden">
+        <ConversationSidebar
+          conversations={conversations}
+          currentConversation={currentConversation}
+          onNewConversation={handleNewConversation}
+          onSelectConversation={selectConversation}
+          onDeleteConversation={deleteConversation}
+          onOpenBilling={() => setBillingOpen(true)}
+          remainingNano={getRemainingForModel('google/gemini-2.0-basic-lite')}
+          remainingGemini={getRemainingForModel('google/gemini-2.5-flash-image-preview')}
+          remainingPro={getRemainingForModel('google/gemini-3-pro-image-preview')}
+          isAuthenticated={true}
+        />
 
         {/* Guide */}
         <div className="mb-8">

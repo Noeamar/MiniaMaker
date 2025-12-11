@@ -60,26 +60,37 @@ export default function Auth() {
 
     try {
       const redirectUrl = `${window.location.origin}/`;
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: redirectUrl,
+          data: {
+            // Additional user metadata if needed
+          }
         },
       });
 
       if (error) {
-        if (error.message.includes("already registered")) {
+        if (error.message.includes("already registered") || error.message.includes("already been registered")) {
           toast.error("Cet email est déjà utilisé. Connectez-vous ou utilisez un autre email.");
+        } else if (error.message.includes("Password")) {
+          toast.error("Le mot de passe doit contenir au moins 6 caractères.");
         } else {
-          toast.error(error.message);
+          toast.error(error.message || "Erreur lors de l'inscription");
         }
       } else {
-        toast.success("Compte créé avec succès !");
-        navigate("/");
+        // Check if email confirmation is required
+        if (data.user && !data.session) {
+          toast.success("Compte créé ! Vérifiez votre email pour confirmer votre compte.");
+        } else {
+          toast.success("Compte créé avec succès ! Vous êtes maintenant connecté.");
+          navigate("/");
+        }
       }
-    } catch (error) {
-      toast.error("Erreur lors de l'inscription");
+    } catch (error: any) {
+      console.error("Sign up error:", error);
+      toast.error(error.message || "Erreur lors de l'inscription");
     } finally {
       setIsLoading(false);
     }
@@ -90,23 +101,30 @@ export default function Auth() {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        if (error.message.includes("Invalid login")) {
+        if (error.message.includes("Invalid login") || error.message.includes("Invalid credentials")) {
           toast.error("Email ou mot de passe incorrect");
+        } else if (error.message.includes("Email not confirmed")) {
+          toast.error("Veuillez confirmer votre email avant de vous connecter.");
         } else {
-          toast.error(error.message);
+          toast.error(error.message || "Erreur lors de la connexion");
         }
       } else {
-        toast.success("Connexion réussie !");
-        navigate("/");
+        if (data.session) {
+          toast.success("Connexion réussie !");
+          navigate("/");
+        } else {
+          toast.error("Erreur : aucune session créée");
+        }
       }
-    } catch (error) {
-      toast.error("Erreur lors de la connexion");
+    } catch (error: any) {
+      console.error("Sign in error:", error);
+      toast.error(error.message || "Erreur lors de la connexion");
     } finally {
       setIsLoading(false);
     }
