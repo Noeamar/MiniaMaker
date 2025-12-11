@@ -351,8 +351,14 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in generate-thumbnail function:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erreur interne du serveur';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('Error stack:', errorStack);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ 
+        error: errorMessage,
+        stack: errorStack,
+        details: 'Vérifiez les logs Supabase pour plus de détails'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

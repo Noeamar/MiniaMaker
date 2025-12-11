@@ -55,6 +55,45 @@ export interface GenerationSettings {
   format: FormatSettings;
 }
 
+export interface Conversation {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationMessage {
+  id: string;
+  conversation_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  image_urls: string[];
+  model_used: string | null;
+  settings: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface UserProfile {
+  id: string;
+  user_id: string;
+  credits: number;
+  subscription_tier: string;
+  subscription_plan: SubscriptionPlan;
+  daily_generations_nano: number;
+  daily_generations_gemini: number;
+  last_generation_date: string;
+}
+
+export interface SubscriptionPlanInfo {
+  id: string;
+  name: string;
+  plan_type: SubscriptionPlan;
+  price_monthly: number;
+  nano_daily_limit: number | null;
+  gemini_daily_limit: number | null;
+  features: { description: string };
+}
+
 export const AI_MODELS: { value: AIModel; label: string; description: string; icon: string }[] = [
   {
     value: 'google/gemini-2.0-basic-lite',

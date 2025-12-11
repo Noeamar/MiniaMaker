@@ -49,67 +49,34 @@ export function ConversationSidebar({
   isAuthenticated
 }: ConversationSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
-
-  const handleDeleteClick = (e: React.MouseEvent, conversationId: string) => {
-    e.stopPropagation();
-    setConversationToDelete(conversationId);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = () => {
-    if (conversationToDelete) {
-      onDeleteConversation(conversationToDelete);
-      setDeleteDialogOpen(false);
-      setConversationToDelete(null);
-    }
-  };
 
   if (!isAuthenticated) return null;
 
   return (
-    <>
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer la conversation ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action est irréversible. La conversation et tous ses messages seront définitivement supprimés.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <div 
-        className={cn(
-          "h-full bg-secondary/30 border-r border-border/50 flex flex-col transition-all duration-300",
-          isCollapsed ? "w-16" : "w-72"
-        )}
-      >
+    <div 
+      className={cn(
+        "h-full bg-secondary/30 border-r border-border/50 flex flex-col transition-all duration-300 overflow-hidden",
+        isCollapsed ? "w-16" : "w-72"
+      )}
+    >
       {/* Header */}
-      <div className="p-3 border-b border-border/50 flex items-center justify-between">
+      <div className="p-3 border-b border-border/50 flex items-center gap-2 min-w-0">
         {!isCollapsed && (
           <Button 
             onClick={onNewConversation}
             size="sm"
-            className="flex-1 gap-2"
+            className="flex-1 gap-2 min-w-0"
           >
-            <Plus className="w-4 h-4" />
-            Nouvelle conversation
+            <Plus className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">Nouvelle conversation</span>
           </Button>
         )}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className={cn(isCollapsed && "mx-auto")}
+          className={cn("flex-shrink-0", isCollapsed && "mx-auto")}
         >
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </Button>
@@ -122,7 +89,7 @@ export function ConversationSidebar({
             <div
               key={conversation.id}
               className={cn(
-                "group flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-secondary/50 transition-colors",
+                "group flex items-center gap-1.5 p-1.5 rounded-lg cursor-pointer hover:bg-secondary/50 transition-colors min-w-0",
                 currentConversation?.id === conversation.id && "bg-secondary"
               )}
               onClick={() => onSelectConversation(conversation)}
@@ -130,17 +97,20 @@ export function ConversationSidebar({
               <MessageSquare className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
               {!isCollapsed && (
                 <>
-                  <span className="flex-1 text-sm truncate">
+                  <span className="flex-1 text-sm truncate min-w-0 max-w-[calc(100%-3rem)]">
                     {conversation.title}
                   </span>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="w-6 h-6 text-muted-foreground hover:text-destructive transition-colors"
-                    onClick={(e) => handleDeleteClick(e, conversation.id)}
+                    className="w-6 h-6 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConversationToDelete(conversation.id);
+                    }}
                     title="Supprimer la conversation"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </>
               )}
@@ -204,7 +174,31 @@ export function ConversationSidebar({
           </Button>
         </div>
       )}
-      </div>
-    </>
+
+      <AlertDialog open={conversationToDelete !== null} onOpenChange={(open) => !open && setConversationToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer la conversation ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. La conversation et tous ses messages seront définitivement supprimés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (conversationToDelete) {
+                  onDeleteConversation(conversationToDelete);
+                  setConversationToDelete(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

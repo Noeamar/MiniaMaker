@@ -30,16 +30,16 @@ export function useUserProfile(userId: string | undefined) {
     if (error) {
       console.error('Error fetching profile:', error);
     } else {
-      setProfile(data as UserProfile | null);
+      setProfile(data as unknown as UserProfile | null);
     }
     setLoading(false);
   };
 
   const fetchPlans = async () => {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('subscription_plans')
       .select('*')
-      .in('plan_type', ['basic', 'standard', 'pro'] as any) // Only fetch the 3 paid plans
+      .in('plan_type', ['basic', 'standard', 'pro']) // Only fetch the 3 paid plans
       .order('price_monthly', { ascending: true });
 
     if (error) {
@@ -62,7 +62,7 @@ export function useUserProfile(userId: string | undefined) {
       return { allowed: false, remaining: 0, limit: 0, error: 'Non connecté' };
     }
 
-    const { data, error } = await supabase.rpc('check_generation_limit', {
+    const { data, error } = await (supabase as any).rpc('check_generation_limit', {
       _user_id: userId,
       _model_type: model
     });
@@ -72,13 +72,13 @@ export function useUserProfile(userId: string | undefined) {
       return { allowed: false, remaining: 0, limit: 0, error: error.message };
     }
 
-    return data as { allowed: boolean; remaining: number; limit: number | null; error?: string };
+    return (data as { allowed: boolean; remaining: number; limit: number | null; error?: string }) || { allowed: false, remaining: 0, limit: 0 };
   };
 
   const incrementGenerationCount = async (model: AIModel) => {
     if (!userId) return;
 
-    const { error } = await supabase.rpc('increment_generation_count', {
+    const { error } = await (supabase as any).rpc('increment_generation_count', {
       _user_id: userId,
       _model_type: model
     });
@@ -101,32 +101,29 @@ export function useUserProfile(userId: string | undefined) {
     let used: number;
     let limit: number | null;
     
-    if (model.includes('gemini-3') || model.includes('3-pro')) {
-      // Pro model (3.0)
+    if (model.includes('gemini-2.0-basic-lite')) {
+      // Cheap model (2.0 Lite) - MiniaMaker Lite
+      used = (profile as any).daily_generations_cheap || profile.daily_generations_nano || 0;
+      limit = currentPlan.nano_daily_limit;
+    } else if (model.includes('gemini-2.5-flash-image-preview')) {
+      // Medium model (2.5 Flash) - MiniaMaker 2
+      used = (profile as any).daily_generations_medium || profile.daily_generations_gemini || 0;
+      limit = currentPlan.gemini_daily_limit;
+    } else if (model.includes('gemini-3') || model.includes('3-pro')) {
+      // Pro model (3.0) - MiniaMaker Pro
       used = (profile as any).daily_generations_pro || 0;
       if (profile.subscription_plan === 'free') {
         limit = 1;
       } else if (currentPlan.gemini_daily_limit === null) {
         limit = null; // Unlimited
       } else {
+        // Pro limit is roughly gemini_daily_limit / 3 for paid plans
         limit = Math.max(1, Math.floor((currentPlan.gemini_daily_limit || 0) / 3));
       }
-    } else if (model.includes('2.5') || model.includes('flash-image-preview')) {
-      // Medium model (2.5)
-      used = (profile as any).daily_generations_medium || 0;
-      if (profile.subscription_plan === 'free') {
-        limit = 3;
-      } else {
-        limit = currentPlan.gemini_daily_limit;
-      }
     } else {
-      // Cheap model (2.0)
-      used = (profile as any).daily_generations_cheap || 0;
-      if (profile.subscription_plan === 'free') {
-        limit = 5;
-      } else {
-        limit = currentPlan.nano_daily_limit;
-      }
+      // Default fallback to medium model
+      used = (profile as any).daily_generations_medium || profile.daily_generations_gemini || 0;
+      limit = currentPlan.gemini_daily_limit;
     }
 
     if (limit === null) return { remaining: -1, limit: null }; // Unlimited
@@ -137,9 +134,9 @@ export function useUserProfile(userId: string | undefined) {
 
     // In a real app, this would go through Stripe
     // For now, just update the subscription plan directly
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('profiles')
-      .update({ subscription_plan: planType as any })
+      .update({ subscription_plan: planType })
       .eq('user_id', userId);
 
     if (error) {

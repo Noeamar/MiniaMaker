@@ -160,6 +160,14 @@ export function BillingDialog({
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-green-500" />
+                      <span>
+                        {plan.gemini_daily_limit === null 
+                          ? 'MiniaMaker Pro illimité' 
+                          : `${Math.floor((plan.gemini_daily_limit || 0) / 3)} MiniaMaker Pro/jour`}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-green-500" />
                       <span>Historique complet</span>
                     </div>
                     {isPaid && (

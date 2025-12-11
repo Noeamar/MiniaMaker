@@ -43,20 +43,13 @@ export function ChatInput({ onSend, isGenerating, disabled, remainingForModel }:
     }
   };
 
-  const handleAdvancedPrompt = (generatedPrompt: string) => {
-    setPrompt(generatedPrompt);
+  const handleAdvancedPromptGenerate = (advancedPrompt: string) => {
+    setPrompt(advancedPrompt);
     textareaRef.current?.focus();
   };
 
   return (
     <div className="border-t border-border/50 bg-background p-4 space-y-3">
-      {/* Advanced Prompt Dialog */}
-      <AdvancedPromptDialog
-        open={showAdvancedPrompt}
-        onOpenChange={setShowAdvancedPrompt}
-        onGenerate={handleAdvancedPrompt}
-      />
-
       {/* Images section */}
       <Collapsible open={showImages} onOpenChange={setShowImages}>
         <CollapsibleContent>
@@ -65,19 +58,6 @@ export function ChatInput({ onSend, isGenerating, disabled, remainingForModel }:
           </div>
         </CollapsibleContent>
       </Collapsible>
-
-      {/* Prompt mode selector */}
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowAdvancedPrompt(true)}
-          className="gap-2"
-        >
-          <Sparkles className="w-4 h-4" />
-          Prompt Avancé
-        </Button>
-      </div>
 
       {/* Input row */}
       <div className="flex gap-2 items-end">
@@ -102,6 +82,15 @@ export function ChatInput({ onSend, isGenerating, disabled, remainingForModel }:
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setShowAdvancedPrompt(true)}
+            disabled={isGenerating || disabled}
+            title="Prompt avancé"
+          >
+            <Sparkles className="w-4 h-4" />
+          </Button>
           <ModelSelector 
             selectedModel={selectedModel} 
             onModelChange={setSelectedModel} 
@@ -135,6 +124,12 @@ export function ChatInput({ onSend, isGenerating, disabled, remainingForModel }:
           Plus que {remaining} génération{remaining > 1 ? 's' : ''} pour ce modèle aujourd'hui.
         </p>
       )}
+
+      <AdvancedPromptDialog
+        open={showAdvancedPrompt}
+        onOpenChange={setShowAdvancedPrompt}
+        onGenerate={handleAdvancedPromptGenerate}
+      />
     </div>
   );
 }
