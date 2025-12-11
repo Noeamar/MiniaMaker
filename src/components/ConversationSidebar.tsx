@@ -30,7 +30,6 @@ interface ConversationSidebarProps {
   onSelectConversation: (conversation: Conversation) => void;
   onDeleteConversation: (id: string) => void;
   onOpenBilling: () => void;
-  remainingNano: number;
   remainingGemini: number;
   remainingPro?: number;
   isAuthenticated: boolean;
@@ -43,7 +42,6 @@ export function ConversationSidebar({
   onSelectConversation,
   onDeleteConversation,
   onOpenBilling,
-  remainingNano,
   remainingGemini,
   remainingPro = 0,
   isAuthenticated
@@ -123,19 +121,6 @@ export function ConversationSidebar({
       {!isCollapsed && (
         <div className="p-3 border-t border-border/50 space-y-2">
           <div className="text-xs text-muted-foreground space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                MiniaMaker Lite
-              </span>
-              <span className={cn(
-                "font-medium",
-                remainingNano === 0 && "text-destructive",
-                remainingNano === -1 && "text-primary"
-              )}>
-                {remainingNano === -1 ? '∞' : `${remainingNano} restantes`}
-              </span>
-            </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />

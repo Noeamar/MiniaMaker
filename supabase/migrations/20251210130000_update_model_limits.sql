@@ -79,10 +79,10 @@ BEGIN
   -- Model 2.5 (medium) uses gemini_daily_limit  
   -- Model 3.0 (pro) uses a separate limit (we'll use gemini_daily_limit / 3 for now, or add a new column)
   IF _model_type LIKE '%gemini-3%' OR _model_type LIKE '%3-pro%' THEN
-    -- Pro model (3.0) - for free plan: 1 per day, for others: use gemini_daily_limit / 3
+    -- Pro model (3.0) - for free plan: 0 per day (no access), for others: use gemini_daily_limit / 3
     _current_count := _profile.daily_generations_pro;
     IF _profile.subscription_plan = 'free' THEN
-      _limit := 1;
+      _limit := 0; -- Free plan: no access to Pro model
     ELSIF _plan.gemini_daily_limit IS NULL THEN
       _limit := NULL; -- Unlimited
     ELSE
@@ -98,10 +98,10 @@ BEGIN
       _limit := _plan.gemini_daily_limit;
     END IF;
   ELSE
-    -- Cheap model (2.0) - uses nano_daily_limit
+    -- Cheap model (2.0 Lite) - uses nano_daily_limit
     _current_count := _profile.daily_generations_cheap;
     IF _profile.subscription_plan = 'free' THEN
-      _limit := 5;
+      _limit := 3; -- Free plan: 3 Lite generations per day
     ELSE
       _limit := _plan.nano_daily_limit;
     END IF;

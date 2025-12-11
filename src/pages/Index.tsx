@@ -376,7 +376,6 @@ export default function Index() {
           onSelectConversation={selectConversation}
           onDeleteConversation={deleteConversation}
           onOpenBilling={() => setBillingOpen(true)}
-          remainingNano={getRemainingForModel('google/gemini-2.0-basic-lite')}
           remainingGemini={getRemainingForModel('google/gemini-2.5-flash-image-preview')}
           remainingPro={getRemainingForModel('google/gemini-3-pro-image-preview')}
           isAuthenticated={true}

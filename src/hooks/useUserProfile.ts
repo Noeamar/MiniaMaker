@@ -95,35 +95,33 @@ export function useUserProfile(userId: string | undefined) {
     if (!profile) return { remaining: 0, limit: 0 };
 
     const currentPlan = plans.find(p => p.plan_type === profile.subscription_plan);
-    if (!currentPlan) return { remaining: 0, limit: 0 };
+    const isFreePlan = profile.subscription_plan === 'free';
 
     // Determine which counter and limit to use based on model
     let used: number;
     let limit: number | null;
     
-    if (model.includes('gemini-2.0-basic-lite')) {
-      // Cheap model (2.0 Lite) - MiniaMaker Lite
-      used = (profile as any).daily_generations_cheap || profile.daily_generations_nano || 0;
-      limit = currentPlan.nano_daily_limit;
-    } else if (model.includes('gemini-2.5-flash-image-preview')) {
+    if (model.includes('gemini-2.5-flash-image-preview')) {
       // Medium model (2.5 Flash) - MiniaMaker 2
       used = (profile as any).daily_generations_medium || profile.daily_generations_gemini || 0;
-      limit = currentPlan.gemini_daily_limit;
+      // Free plan: 3 per day (hardcoded in SQL function)
+      limit = isFreePlan ? 3 : (currentPlan?.gemini_daily_limit ?? 0);
     } else if (model.includes('gemini-3') || model.includes('3-pro')) {
       // Pro model (3.0) - MiniaMaker Pro
       used = (profile as any).daily_generations_pro || 0;
-      if (profile.subscription_plan === 'free') {
-        limit = 1;
-      } else if (currentPlan.gemini_daily_limit === null) {
+      // Free plan: 0 per day (no access - hardcoded in SQL function)
+      if (isFreePlan) {
+        limit = 0;
+      } else if (currentPlan?.gemini_daily_limit === null) {
         limit = null; // Unlimited
       } else {
         // Pro limit is roughly gemini_daily_limit / 3 for paid plans
-        limit = Math.max(1, Math.floor((currentPlan.gemini_daily_limit || 0) / 3));
+        limit = Math.max(1, Math.floor((currentPlan?.gemini_daily_limit || 0) / 3));
       }
     } else {
       // Default fallback to medium model
       used = (profile as any).daily_generations_medium || profile.daily_generations_gemini || 0;
-      limit = currentPlan.gemini_daily_limit;
+      limit = isFreePlan ? 3 : (currentPlan?.gemini_daily_limit ?? 0);
     }
 
     if (limit === null) return { remaining: -1, limit: null }; // Unlimited

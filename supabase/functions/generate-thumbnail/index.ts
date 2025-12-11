@@ -104,9 +104,6 @@ function buildOptimizedPrompt(request: GenerationRequest): string {
 // Map internal model names to Google Gemini API model names
 function mapModelToGemini(model: string): string {
   const modelMap: Record<string, string> = {
-    // BASIC – ultra cheap (2.0)
-    'google/gemini-2.0-basic-lite': 'gemini-2.0-flash-lite',
-
     // NORMAL – medium price (2.5)
     'google/gemini-2.5-flash-image-preview': 'gemini-2.5-flash-image-preview',
 
@@ -114,8 +111,8 @@ function mapModelToGemini(model: string): string {
     'google/gemini-3-pro-image-preview': 'gemini-3-pro-image-preview',
   };
 
-  // Default to cheapest model
-  return modelMap[model] || 'gemini-2.0-flash-lite';
+  // Default to normal model
+  return modelMap[model] || 'gemini-2.5-flash-image-preview';
 }
 
 // Convert image URL or base64 to Gemini format
@@ -178,14 +175,25 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Parsing request body...');
-    const request: GenerationRequest = await req.json();
-    console.log('Request received:', {
-      prompt: request.prompt?.substring(0, 50) + '...',
-      model: request.model,
-      imagesCount: request.images?.length || 0,
-      hasFormat: !!request.format
-    });
+    // Safely parse request body
+    let request: GenerationRequest;
+    try {
+      const requestText = await req.text();
+      if (!requestText || requestText.trim().length === 0) {
+        return new Response(
+          JSON.stringify({ error: 'Requête vide' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      request = JSON.parse(requestText);
+    } catch (parseError) {
+      console.error('Error parsing request:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Format de requête invalide' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const { prompt, model, images, format } = request;
     
     if (!prompt) {

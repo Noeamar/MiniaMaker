@@ -96,12 +96,6 @@ export interface SubscriptionPlanInfo {
 
 export const AI_MODELS: { value: AIModel; label: string; description: string; icon: string }[] = [
   {
-    value: 'google/gemini-2.0-basic-lite',
-    label: 'MiniaMaker Lite',
-    description: 'Le moins cher, rapide',
-    icon: '⚡'
-  },
-  {
     value: 'google/gemini-2.5-flash-image-preview',
     label: 'MiniaMaker 2',
     description: 'Équilibré, recommandé',

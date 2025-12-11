@@ -29,3 +29,4 @@ export function useAuth() {
 
   return { user, session, loading, signOut };
 }
+

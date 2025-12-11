@@ -34,3 +34,4 @@ ON CONFLICT (plan_type) DO UPDATE SET
   gemini_daily_limit = EXCLUDED.gemini_daily_limit,
   features = EXCLUDED.features;
 
+
