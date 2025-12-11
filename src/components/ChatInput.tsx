@@ -54,7 +54,7 @@ export function ChatInput({ onSend, isGenerating, disabled, remainingForModel }:
       <Collapsible open={showImages} onOpenChange={setShowImages}>
         <CollapsibleContent>
           <div className="mb-3">
-            <ImageUploader images={images} onImagesChange={setImages} />
+            <ImageUploader images={images} onImagesChange={setImages} maxImages={3} />
           </div>
         </CollapsibleContent>
       </Collapsible>

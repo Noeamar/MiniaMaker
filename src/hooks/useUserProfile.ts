@@ -39,15 +39,15 @@ export function useUserProfile(userId: string | undefined) {
     const { data, error } = await (supabase as any)
       .from('subscription_plans')
       .select('*')
-      .in('plan_type', ['basic', 'standard', 'pro']) // Only fetch the 3 paid plans
+      .in('plan_type', ['basic', 'plus', 'pro']) // Only fetch the 3 paid plans
       .order('price_monthly', { ascending: true });
 
     if (error) {
       console.error('Error fetching plans:', error);
     } else {
-      // Cast the features field properly and filter to only show basic, standard, pro
+      // Cast the features field properly and filter to only show basic, plus, pro
       const typedPlans: SubscriptionPlanInfo[] = (data || [])
-        .filter(plan => ['basic', 'standard', 'pro'].includes(plan.plan_type as string))
+        .filter(plan => ['basic', 'plus', 'pro'].includes(plan.plan_type as string))
         .map(plan => ({
           ...plan,
           plan_type: plan.plan_type as SubscriptionPlan,
@@ -103,25 +103,34 @@ export function useUserProfile(userId: string | undefined) {
     
     if (model.includes('gemini-2.5-flash-image-preview')) {
       // Medium model (2.5 Flash) - MiniaMaker 2
-      used = (profile as any).daily_generations_medium || profile.daily_generations_gemini || 0;
-      // Free plan: 3 per day (hardcoded in SQL function)
-      limit = isFreePlan ? 3 : (currentPlan?.gemini_daily_limit ?? 0);
+      // For free plan: use daily limit (3/day)
+      // For paid plans: use monthly limit
+      if (isFreePlan) {
+        used = (profile as any).daily_generations_medium || profile.daily_generations_gemini || 0;
+        limit = 3; // Free plan: 3 per day
+      } else {
+        used = (profile as any).monthly_generations_medium || 0;
+        limit = currentPlan?.gemini_monthly_limit ?? currentPlan?.gemini_daily_limit ?? 0;
+      }
     } else if (model.includes('gemini-3') || model.includes('3-pro')) {
       // Pro model (3.0) - MiniaMaker Pro
-      used = (profile as any).daily_generations_pro || 0;
-      // Free plan: 0 per day (no access - hardcoded in SQL function)
+      // Free plan: 0 per day (no access)
       if (isFreePlan) {
+        used = 0;
         limit = 0;
-      } else if (currentPlan?.gemini_daily_limit === null) {
-        limit = null; // Unlimited
       } else {
-        // Pro limit is roughly gemini_daily_limit / 3 for paid plans
-        limit = Math.max(1, Math.floor((currentPlan?.gemini_daily_limit || 0) / 3));
+        used = (profile as any).monthly_generations_pro || 0;
+        limit = currentPlan?.pro_monthly_limit ?? null;
       }
     } else {
       // Default fallback to medium model
-      used = (profile as any).daily_generations_medium || profile.daily_generations_gemini || 0;
-      limit = isFreePlan ? 3 : (currentPlan?.gemini_daily_limit ?? 0);
+      if (isFreePlan) {
+        used = (profile as any).daily_generations_medium || profile.daily_generations_gemini || 0;
+        limit = 3;
+      } else {
+        used = (profile as any).monthly_generations_medium || 0;
+        limit = currentPlan?.gemini_monthly_limit ?? currentPlan?.gemini_daily_limit ?? 0;
+      }
     }
 
     if (limit === null) return { remaining: -1, limit: null }; // Unlimited

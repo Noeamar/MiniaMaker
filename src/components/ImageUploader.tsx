@@ -19,6 +19,16 @@ export function ImageUploader({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isValidImageFile = (file: File): boolean => {
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.ico', '.tiff', '.tif'];
+    const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml', 'image/x-icon', 'image/tiff'];
+    
+    const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+    const mimeType = file.type.toLowerCase();
+    
+    return validExtensions.includes(extension) || validMimeTypes.includes(mimeType) || mimeType.startsWith('image/');
+  };
+
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
     
@@ -28,7 +38,18 @@ export function ImageUploader({
       return;
     }
 
-    const newFiles = Array.from(files).slice(0, remainingSlots);
+    // Filter valid image files
+    const validFiles = Array.from(files).filter(file => {
+      if (!isValidImageFile(file)) {
+        toast.error(`Le fichier "${file.name}" n'est pas un format d'image valide (jpg, jpeg, png, gif, webp, etc.)`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
+    const newFiles = validFiles.slice(0, remainingSlots);
     const newImages: UploadedImage[] = newFiles.map((file) => ({
       id: crypto.randomUUID(),
       url: URL.createObjectURL(file),
@@ -86,7 +107,7 @@ export function ImageUploader({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/svg+xml,image/x-icon,image/tiff,.jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.ico,.tiff"
           multiple
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
@@ -96,7 +117,7 @@ export function ImageUploader({
           {isDragging ? "Déposez les images ici" : "Cliquez ou glissez des images"}
         </p>
         <p className="text-xs text-muted-foreground/70 mt-1">
-          Photos de visages, logos, captures d'écran, etc.
+          Formats acceptés : JPG, JPEG, PNG, GIF, WebP, BMP, SVG, etc.
         </p>
       </div>
 

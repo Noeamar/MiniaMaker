@@ -9,9 +9,9 @@ const corsHeaders = {
 
 // Stripe price IDs - À mettre à jour après avoir exécuté le script create-stripe-products.js
 const PRICE_IDS: Record<string, string> = {
-  basic: "price_1Sd7K5DJTVfj1w1L6yySEIfV", // À remplacer par le vrai Price ID
-  standard: "price_1Sd7K6DJTVfj1w1LK56f7Q41", // À remplacer par le vrai Price ID
-  pro: "price_1Sd7K7DJTVfj1w1LQJydDTVV", // À remplacer par le vrai Price ID
+  basic: "price_1SdFzZDJTVfj1w1LMuW9E0it", // À remplacer par le vrai Price ID après exécution du script
+  plus: "price_1SdFzaDJTVfj1w1LIutBgn0E", // À remplacer par le vrai Price ID après exécution du script
+  pro: "price_1SdFzbDJTVfj1w1LewiVA2tB", // À remplacer par le vrai Price ID après exécution du script
 };
 
 serve(async (req) => {

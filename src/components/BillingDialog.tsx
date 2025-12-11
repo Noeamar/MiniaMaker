@@ -20,7 +20,7 @@ interface BillingDialogProps {
 const planIcons: Record<SubscriptionPlan, React.ReactNode> = {
   free: <Sparkles className="w-6 h-6" />,
   basic: <Zap className="w-6 h-6" />,
-  standard: <Crown className="w-6 h-6" />,
+  plus: <Crown className="w-6 h-6" />,
   pro: <Crown className="w-6 h-6" />,
   starter: <Zap className="w-6 h-6" />,
   unlimited: <Infinity className="w-6 h-6" />
@@ -29,7 +29,7 @@ const planIcons: Record<SubscriptionPlan, React.ReactNode> = {
 const planColors: Record<SubscriptionPlan, string> = {
   free: 'border-muted',
   basic: 'border-blue-500/50',
-  standard: 'border-primary/50',
+  plus: 'border-primary/50',
   pro: 'border-yellow-500/50',
   starter: 'border-blue-500/50',
   unlimited: 'border-yellow-500/50'
@@ -145,25 +145,17 @@ export function BillingDialog({
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-green-500" />
                       <span>
-                        {plan.nano_daily_limit === null 
-                          ? 'MiniaMaker Lite illimité' 
-                          : `${plan.nano_daily_limit} MiniaMaker Lite/jour`}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-500" />
-                      <span>
-                        {plan.gemini_daily_limit === null 
+                        {(plan as any).gemini_monthly_limit === null 
                           ? 'MiniaMaker 2 illimité' 
-                          : `${plan.gemini_daily_limit} MiniaMaker 2/jour`}
+                          : `${(plan as any).gemini_monthly_limit || plan.gemini_daily_limit || 0} générations MiniaMaker 2/mois`}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-green-500" />
                       <span>
-                        {plan.gemini_daily_limit === null 
+                        {(plan as any).pro_monthly_limit === null 
                           ? 'MiniaMaker Pro illimité' 
-                          : `${Math.floor((plan.gemini_daily_limit || 0) / 3)} MiniaMaker Pro/jour`}
+                          : `${(plan as any).pro_monthly_limit || 0} générations Pro/mois`}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -215,7 +207,7 @@ export function BillingDialog({
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-4">
-          Les limites sont réinitialisées chaque jour à minuit (UTC).
+          Les limites sont réinitialisées chaque mois.
           Paiement sécurisé via Stripe.
         </p>
       </DialogContent>

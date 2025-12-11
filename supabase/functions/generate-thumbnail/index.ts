@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -72,9 +73,23 @@ function buildOptimizedPrompt(request: GenerationRequest): string {
   // Add format specifications
   if (format) {
     const dimensions = getResolutionDimensions(format.resolution, format.ratio, format.customRatio);
-    optimizedPrompt += `SPÉCIFICATIONS TECHNIQUES:\n`;
-    optimizedPrompt += `- Dimensions: ${dimensions}\n`;
-    optimizedPrompt += `- Ratio: ${format.ratio === 'custom' ? format.customRatio : format.ratio}\n`;
+    const [width, height] = dimensions.split('×').map(s => s.trim());
+    const ratioValue = format.ratio === 'custom' ? format.customRatio : format.ratio;
+    
+    optimizedPrompt += `=== SPÉCIFICATIONS TECHNIQUES STRICTES - À RESPECTER ABSOLUMENT ===\n\n`;
+    optimizedPrompt += `FORMAT OBLIGATOIRE:\n`;
+    optimizedPrompt += `- Dimensions EXACTES: ${width} pixels de largeur × ${height} pixels de hauteur\n`;
+    optimizedPrompt += `- Ratio d'aspect EXACT: ${ratioValue}\n`;
+    optimizedPrompt += `- Tu DOIS générer une image avec ces dimensions précises. AUCUNE exception.\n\n`;
+    
+    optimizedPrompt += `RÈGLES STRICTES DE GÉNÉRATION:\n`;
+    optimizedPrompt += `1. Si le ratio est 16:9, génère UNIQUEMENT une image horizontale rectangulaire (largeur > hauteur)\n`;
+    optimizedPrompt += `2. Si le ratio est 1:1, génère UNIQUEMENT une image carrée (largeur = hauteur)\n`;
+    optimizedPrompt += `3. Si le ratio est 9:16, génère UNIQUEMENT une image verticale rectangulaire (hauteur > largeur)\n`;
+    optimizedPrompt += `4. La composition DOIT être adaptée au ratio ${ratioValue} - ne place pas d'éléments importants dans des zones qui seraient coupées\n`;
+    optimizedPrompt += `5. Respecte les dimensions ${width}×${height} pixels EXACTEMENT\n\n`;
+    
+    optimizedPrompt += `AUTRES SPÉCIFICATIONS:\n`;
     optimizedPrompt += `- Couleur de marque: ${format.brandColor}\n`;
     optimizedPrompt += `- Style de police: ${format.fontStyle}\n`;
     
@@ -94,8 +109,17 @@ function buildOptimizedPrompt(request: GenerationRequest): string {
   // Add user prompt
   optimizedPrompt += `DEMANDE DE L'UTILISATEUR:\n${prompt}\n\n`;
   
-  // Final instruction
-  optimizedPrompt += `Génère une miniature YouTube professionnelle, accrocheuse et visuellement impactante qui respecte toutes ces directives.`;
+  // Final instruction with strict format reminder
+  if (format) {
+    const dimensions = getResolutionDimensions(format.resolution, format.ratio, format.customRatio);
+    const ratioValue = format.ratio === 'custom' ? format.customRatio : format.ratio;
+    optimizedPrompt += `=== INSTRUCTION FINALE CRITIQUE ===\n`;
+    optimizedPrompt += `Génère une miniature YouTube professionnelle, accrocheuse et visuellement impactante.\n`;
+    optimizedPrompt += `MAIS LE PLUS IMPORTANT: L'image générée DOIT avoir EXACTEMENT ${dimensions} pixels et un ratio d'aspect EXACT de ${ratioValue}.\n`;
+    optimizedPrompt += `Si tu génères une image dans un autre format ou ratio, c'est une ERREUR CRITIQUE. Respecte strictement ${dimensions} pixels et ratio ${ratioValue}.`;
+  } else {
+    optimizedPrompt += `Génère une miniature YouTube professionnelle, accrocheuse et visuellement impactante qui respecte toutes ces directives.`;
+  }
   
   return optimizedPrompt;
 }
@@ -201,6 +225,57 @@ serve(async (req) => {
         JSON.stringify({ error: 'Le prompt est requis' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Check authentication
+    const authHeader = req.headers.get('authorization');
+    const isAuthenticated = !!authHeader;
+    
+    // If not authenticated, check IP for trial usage
+    if (!isAuthenticated) {
+      const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
+      
+      // Initialize Supabase client
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      
+      if (!supabaseUrl || !supabaseServiceKey) {
+        console.error('Supabase credentials not configured');
+        return new Response(
+          JSON.stringify({ error: 'Configuration serveur manquante' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      // Check if IP has already used trial
+      const { data: existing, error: checkError } = await supabase
+        .from("anonymous_usage")
+        .select("*")
+        .eq("ip", ip)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error('Error checking anonymous usage:', checkError);
+        // If table doesn't exist, log but continue (graceful degradation)
+        console.warn('anonymous_usage table may not exist, continuing without IP check');
+      } else if (existing) {
+        return new Response(
+          JSON.stringify({ error: "Vous avez déjà utilisé votre essai gratuit." }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Record IP usage
+      const { error: insertError } = await supabase
+        .from("anonymous_usage")
+        .insert({ ip, used_at: new Date().toISOString() });
+      
+      if (insertError) {
+        console.error('Error recording anonymous usage:', insertError);
+        // Continue even if insert fails (graceful degradation)
+      }
     }
 
     const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');

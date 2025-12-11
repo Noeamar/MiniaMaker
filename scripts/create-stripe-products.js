@@ -24,27 +24,27 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const plans = [
   {
     id: 'basic',
-    name: 'Basic',
-    monthly_price: 15,
-    daily_limit_nano: 10,
-    daily_limit_gemini: 1,
-    model: 'google/gemini-2.0-basic-lite'
+    name: 'BASIC',
+    monthly_price: 4.99,
+    monthly_limit_gemini: 30,  // MiniaMaker 2
+    monthly_limit_pro: 3,       // Pro
+    description: '30 générations MiniaMaker 2/mois, 3 générations Pro/mois'
   },
   {
-    id: 'standard',
-    name: 'Standard',
-    monthly_price: 20,
-    daily_limit_nano: 100,
-    daily_limit_gemini: 20,
-    model: 'google/gemini-2.5-flash-image-preview'
+    id: 'plus',
+    name: 'PLUS',
+    monthly_price: 12.99,
+    monthly_limit_gemini: 100,  // MiniaMaker 2
+    monthly_limit_pro: 10,      // Pro
+    description: '100 générations MiniaMaker 2/mois, 10 générations Pro/mois'
   },
   {
     id: 'pro',
-    name: 'Pro',
-    monthly_price: 29,
-    daily_limit_nano: 9999,
-    daily_limit_gemini: 200,
-    model: 'google/gemini-3-pro-image-preview'
+    name: 'PRO',
+    monthly_price: 29.99,
+    monthly_limit_gemini: 400,  // MiniaMaker 2
+    monthly_limit_pro: 30,       // Pro
+    description: '400 générations MiniaMaker 2/mois, 30 générations Pro/mois'
   }
 ];
 
@@ -64,12 +64,11 @@ async function createStripeProducts() {
         // Créer le produit
         product = await stripe.products.create({
           name: `MiniaMaker ${plan.name}`,
-          description: `${plan.daily_limit_nano === 9999 ? 'Illimité' : plan.daily_limit_nano} MiniaMaker Lite/jour, ${plan.daily_limit_gemini} MiniaMaker 2/jour`,
+          description: plan.description,
           metadata: {
             plan_id: plan.id,
-            daily_limit_nano: plan.daily_limit_nano.toString(),
-            daily_limit_gemini: plan.daily_limit_gemini.toString(),
-            model: plan.model
+            monthly_limit_gemini: plan.monthly_limit_gemini.toString(),
+            monthly_limit_pro: plan.monthly_limit_pro.toString()
           }
         });
         console.log(`✅ Produit créé: ${product.name} (${product.id})`);

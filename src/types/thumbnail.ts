@@ -5,7 +5,7 @@ export type AIModel = 'google/gemini-2.0-basic-lite' | 'google/gemini-2.5-flash-
 export type ThumbnailRatio = '16:9' | '1:1' | '9:16' | 'custom';
 export type ThumbnailResolution = '720p' | '1080p' | '4K';
 
-export type SubscriptionPlan = 'free' | 'basic' | 'standard' | 'pro' | 'starter' | 'unlimited';
+export type SubscriptionPlan = 'free' | 'basic' | 'plus' | 'pro' | 'starter' | 'unlimited';
 
 export interface TemplateData {
   id?: string;
@@ -89,8 +89,10 @@ export interface SubscriptionPlanInfo {
   name: string;
   plan_type: SubscriptionPlan;
   price_monthly: number;
-  nano_daily_limit: number | null;
-  gemini_daily_limit: number | null;
+  nano_daily_limit?: number | null;  // Legacy, kept for compatibility
+  gemini_daily_limit?: number | null;  // Legacy, kept for compatibility
+  gemini_monthly_limit?: number | null;  // New: monthly limit for MiniaMaker 2
+  pro_monthly_limit?: number | null;  // New: monthly limit for Pro
   features: { description: string };
 }
 
