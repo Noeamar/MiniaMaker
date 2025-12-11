@@ -14,83 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
-      conversation_messages: {
-        Row: {
-          content: string
-          conversation_id: string
-          created_at: string
-          id: string
-          image_urls: string[] | null
-          model_used: string | null
-          role: string
-          settings: Json | null
-        }
-        Insert: {
-          content: string
-          conversation_id: string
-          created_at?: string
-          id?: string
-          image_urls?: string[] | null
-          model_used?: string | null
-          role: string
-          settings?: Json | null
-        }
-        Update: {
-          content?: string
-          conversation_id?: string
-          created_at?: string
-          id?: string
-          image_urls?: string[] | null
-          model_used?: string | null
-          role?: string
-          settings?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversation_messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      conversations: {
-        Row: {
-          created_at: string
-          id: string
-          title: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          title?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          title?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
           credits: number
-          daily_generations_gemini: number | null
-          daily_generations_nano: number | null
           id: string
-          last_generation_date: string | null
-          subscription_plan:
-            | Database["public"]["Enums"]["subscription_plan"]
-            | null
           subscription_tier: Database["public"]["Enums"]["subscription_tier"]
           updated_at: string
           user_id: string
@@ -99,13 +28,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           credits?: number
-          daily_generations_gemini?: number | null
-          daily_generations_nano?: number | null
           id?: string
-          last_generation_date?: string | null
-          subscription_plan?:
-            | Database["public"]["Enums"]["subscription_plan"]
-            | null
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
           user_id: string
@@ -114,49 +37,10 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           credits?: number
-          daily_generations_gemini?: number | null
-          daily_generations_nano?: number | null
           id?: string
-          last_generation_date?: string | null
-          subscription_plan?:
-            | Database["public"]["Enums"]["subscription_plan"]
-            | null
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      subscription_plans: {
-        Row: {
-          created_at: string
-          features: Json | null
-          gemini_daily_limit: number | null
-          id: string
-          name: string
-          nano_daily_limit: number | null
-          plan_type: Database["public"]["Enums"]["subscription_plan"]
-          price_monthly: number
-        }
-        Insert: {
-          created_at?: string
-          features?: Json | null
-          gemini_daily_limit?: number | null
-          id?: string
-          name: string
-          nano_daily_limit?: number | null
-          plan_type: Database["public"]["Enums"]["subscription_plan"]
-          price_monthly: number
-        }
-        Update: {
-          created_at?: string
-          features?: Json | null
-          gemini_daily_limit?: number | null
-          id?: string
-          name?: string
-          nano_daily_limit?: number | null
-          plan_type?: Database["public"]["Enums"]["subscription_plan"]
-          price_monthly?: number
         }
         Relationships: []
       }
@@ -268,33 +152,6 @@ export type Database = {
           },
         ]
       }
-      user_feedback: {
-        Row: {
-          comment: string | null
-          created_at: string
-          id: string
-          rating: number | null
-          thumbnail_url: string | null
-          user_id: string | null
-        }
-        Insert: {
-          comment?: string | null
-          created_at?: string
-          id?: string
-          rating?: number | null
-          thumbnail_url?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          comment?: string | null
-          created_at?: string
-          id?: string
-          rating?: number | null
-          thumbnail_url?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           created_at: string
@@ -321,10 +178,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_generation_limit: {
-        Args: { _model_type: string; _user_id: string }
-        Returns: Json
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -332,14 +185,9 @@ export type Database = {
         }
         Returns: boolean
       }
-      increment_generation_count: {
-        Args: { _model_type: string; _user_id: string }
-        Returns: undefined
-      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      subscription_plan: "free" | "starter" | "pro" | "unlimited"
       subscription_tier: "free" | "pro_monthly" | "pro_yearly"
     }
     CompositeTypes: {
@@ -469,7 +317,6 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      subscription_plan: ["free", "starter", "pro", "unlimited"],
       subscription_tier: ["free", "pro_monthly", "pro_yearly"],
     },
   },
