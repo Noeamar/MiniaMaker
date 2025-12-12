@@ -49,60 +49,78 @@ export function ChatInput({ onSend, isGenerating, disabled, remainingForModel }:
   };
 
   return (
-    <div className="border-t border-border/50 bg-background p-4 space-y-3">
+    <div className="border-t border-border/50 bg-background">
       {/* Images section */}
       <Collapsible open={showImages} onOpenChange={setShowImages}>
         <CollapsibleContent>
-          <div className="mb-3">
+          <div className="p-4 pb-2">
             <ImageUploader images={images} onImagesChange={setImages} maxImages={3} />
           </div>
         </CollapsibleContent>
       </Collapsible>
 
-      {/* Input row */}
-      <div className="flex gap-2 items-end">
-        <div className="flex-1 relative">
-          <Textarea
-            ref={textareaRef}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Décrivez la miniature que vous voulez créer..."
-            className="min-h-[60px] max-h-[200px] pr-12 resize-none"
-            disabled={isGenerating || disabled}
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-2 bottom-2"
-            onClick={() => setShowImages(!showImages)}
-          >
-            <ImageIcon className="w-4 h-4" />
-          </Button>
-        </div>
+      {/* Input section */}
+      <div className="p-2 md:p-4 space-y-2 md:space-y-3">
+        {/* Input row */}
+        <div className="flex gap-2 items-end">
+          <div className="flex-1 relative">
+            <Textarea
+              ref={textareaRef}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Décrivez la miniature que vous voulez créer..."
+              className="min-h-[60px] max-h-[200px] pr-10 md:pr-12 resize-none text-sm md:text-base"
+              disabled={isGenerating || disabled}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 md:right-2 bottom-1 md:bottom-2 h-7 w-7 md:h-8 md:w-8"
+              onClick={() => setShowImages(!showImages)}
+            >
+              <ImageIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            </Button>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setShowAdvancedPrompt(true)}
-            disabled={isGenerating || disabled}
-            title="Prompt avancé"
-          >
-            <Sparkles className="w-4 h-4" />
-          </Button>
-          <ModelSelector 
-            selectedModel={selectedModel} 
-            onModelChange={setSelectedModel} 
-          />
-          <FormatSettingsPopover 
-            settings={formatSettings} 
-            onSettingsChange={setFormatSettings} 
-          />
+          {/* Desktop controls */}
+          <div className="hidden md:flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowAdvancedPrompt(true)}
+              disabled={isGenerating || disabled}
+              title="Prompt avancé"
+            >
+              <Sparkles className="w-4 h-4" />
+            </Button>
+            <ModelSelector 
+              selectedModel={selectedModel} 
+              onModelChange={setSelectedModel} 
+            />
+            <FormatSettingsPopover 
+              settings={formatSettings} 
+              onSettingsChange={setFormatSettings} 
+            />
+            <Button
+              onClick={handleSend}
+              disabled={!prompt.trim() || isGenerating || !canGenerate}
+              size="lg"
+            >
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+
+          {/* Mobile send button */}
           <Button
             onClick={handleSend}
             disabled={!prompt.trim() || isGenerating || !canGenerate}
             size="lg"
+            className="md:hidden"
           >
             {isGenerating ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -110,6 +128,32 @@ export function ChatInput({ onSend, isGenerating, disabled, remainingForModel }:
               <Send className="w-4 h-4" />
             )}
           </Button>
+        </div>
+
+        {/* Mobile bottom bar */}
+        <div className="md:hidden flex items-center justify-around gap-1 pt-2 border-t border-border/30">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 gap-1.5 text-xs"
+            onClick={() => setShowAdvancedPrompt(true)}
+            disabled={isGenerating || disabled}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span className="hidden xs:inline">Prompt</span>
+          </Button>
+          <div className="flex-1">
+            <ModelSelector 
+              selectedModel={selectedModel} 
+              onModelChange={setSelectedModel} 
+            />
+          </div>
+          <div className="flex-1">
+            <FormatSettingsPopover 
+              settings={formatSettings} 
+              onSettingsChange={setFormatSettings} 
+            />
+          </div>
         </div>
       </div>
 

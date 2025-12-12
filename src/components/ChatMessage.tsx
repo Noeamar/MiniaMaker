@@ -174,22 +174,22 @@ export function ChatMessage({ message, userId }: ChatMessageProps) {
   return (
     <>
       <div className={cn(
-        "flex gap-3 p-4 rounded-lg",
+        "flex gap-2 md:gap-3 p-2 md:p-4 rounded-lg",
         isUser ? "bg-secondary/30" : "bg-background"
       )}>
         <div className={cn(
-          "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
+          "w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center flex-shrink-0",
           isUser ? "bg-primary text-primary-foreground" : "bg-secondary"
         )}>
-          {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+          {isUser ? <User className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Bot className="w-3.5 h-3.5 md:w-4 md:h-4" />}
         </div>
 
-        <div className="flex-1 space-y-3">
-          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+        <div className="flex-1 space-y-2 md:space-y-3">
+          <p className="text-xs md:text-sm whitespace-pre-wrap">{message.content}</p>
 
           {/* Display generated images */}
           {message.image_urls && message.image_urls.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
               {message.image_urls.map((url, index) => (
                 <div key={index} className="relative group rounded-lg overflow-hidden border border-border">
                   <img 

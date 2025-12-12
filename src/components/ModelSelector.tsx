@@ -19,11 +19,11 @@ export function ModelSelector({ selectedModel, onModelChange }: ModelSelectorPro
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
-          <Cpu className="w-4 h-4" />
-          <span className="hidden sm:inline">{currentModel?.label || 'Modèle'}</span>
-          <span className="sm:hidden">{currentModel?.icon}</span>
-          <ChevronDown className="w-3 h-3 opacity-50" />
+        <Button variant="outline" size="sm" className="gap-1.5 md:gap-2 w-full md:w-auto">
+          <Cpu className="w-3.5 h-3.5 md:w-4 md:h-4" />
+          <span className="hidden sm:inline text-xs md:text-sm">{currentModel?.label || 'Modèle'}</span>
+          <span className="sm:hidden text-sm">{currentModel?.icon}</span>
+          <ChevronDown className="w-3 h-3 opacity-50 hidden sm:block" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" className="w-64 bg-popover">

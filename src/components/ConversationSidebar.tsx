@@ -11,6 +11,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Sheet,
+  SheetContent,
+} from '@/components/ui/sheet';
 import { 
   Plus, 
   MessageSquare, 
@@ -33,9 +37,12 @@ interface ConversationSidebarProps {
   remainingGemini: number;
   remainingPro?: number;
   isAuthenticated: boolean;
+  mobileOpen?: boolean;
+  onMobileOpenChange?: (open: boolean) => void;
 }
 
-export function ConversationSidebar({
+// Sidebar content component (reusable for desktop and mobile)
+function SidebarContent({
   conversations,
   currentConversation,
   onNewConversation,
@@ -44,20 +51,24 @@ export function ConversationSidebar({
   onOpenBilling,
   remainingGemini,
   remainingPro = 0,
-  isAuthenticated
-}: ConversationSidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
-
-  if (!isAuthenticated) return null;
-
+  isCollapsed,
+  setIsCollapsed,
+  setConversationToDelete
+}: {
+  conversations: Conversation[];
+  currentConversation: Conversation | null;
+  onNewConversation: () => void;
+  onSelectConversation: (conversation: Conversation) => void;
+  onDeleteConversation: (id: string) => void;
+  onOpenBilling: () => void;
+  remainingGemini: number;
+  remainingPro: number;
+  isCollapsed: boolean;
+  setIsCollapsed: (collapsed: boolean) => void;
+  setConversationToDelete: (id: string | null) => void;
+}) {
   return (
-    <div 
-      className={cn(
-        "h-full bg-secondary/30 border-r border-border/50 flex flex-col transition-all duration-300 overflow-hidden",
-        isCollapsed ? "w-16" : "w-72"
-      )}
-    >
+    <>
       {/* Header */}
       <div className="p-3 border-b border-border/50 flex items-center gap-2 min-w-0">
         {!isCollapsed && (
@@ -74,7 +85,7 @@ export function ConversationSidebar({
           variant="ghost"
           size="icon"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className={cn("flex-shrink-0", isCollapsed && "mx-auto")}
+          className={cn("flex-shrink-0 hidden md:flex", isCollapsed && "mx-auto")}
         >
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </Button>
@@ -159,6 +170,64 @@ export function ConversationSidebar({
           </Button>
         </div>
       )}
+    </>
+  );
+}
+
+export function ConversationSidebar({
+  conversations,
+  currentConversation,
+  onNewConversation,
+  onSelectConversation,
+  onDeleteConversation,
+  onOpenBilling,
+  remainingGemini,
+  remainingPro = 0,
+  isAuthenticated,
+  mobileOpen = false,
+  onMobileOpenChange
+}: ConversationSidebarProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+
+  if (!isAuthenticated) return null;
+
+  const sidebarContent = (
+    <SidebarContent
+      conversations={conversations}
+      currentConversation={currentConversation}
+      onNewConversation={onNewConversation}
+      onSelectConversation={onSelectConversation}
+      onDeleteConversation={onDeleteConversation}
+      onOpenBilling={onOpenBilling}
+      remainingGemini={remainingGemini}
+      remainingPro={remainingPro}
+      isCollapsed={isCollapsed}
+      setIsCollapsed={setIsCollapsed}
+      setConversationToDelete={setConversationToDelete}
+    />
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <div 
+        className={cn(
+          "hidden md:flex h-full bg-secondary/30 border-r border-border/50 flex-col transition-all duration-300 overflow-hidden",
+          isCollapsed ? "w-16" : "w-72"
+        )}
+      >
+        {sidebarContent}
+      </div>
+
+      {/* Mobile Drawer */}
+      <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
+        <SheetContent side="left" className="w-[85vw] sm:w-[320px] p-0">
+          <div className="h-full bg-secondary/30 flex flex-col">
+            {sidebarContent}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <AlertDialog open={conversationToDelete !== null} onOpenChange={(open) => !open && setConversationToDelete(null)}>
         <AlertDialogContent>
@@ -184,6 +253,6 @@ export function ConversationSidebar({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }

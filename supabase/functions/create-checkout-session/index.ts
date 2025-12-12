@@ -7,11 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Stripe price IDs - À mettre à jour après avoir exécuté le script create-stripe-products.js
+// Stripe price IDs - Mis à jour avec les nouveaux tarifs
 const PRICE_IDS: Record<string, string> = {
-  basic: "price_1SdFzZDJTVfj1w1LMuW9E0it", // À remplacer par le vrai Price ID après exécution du script
-  plus: "price_1SdFzaDJTVfj1w1LIutBgn0E", // À remplacer par le vrai Price ID après exécution du script
-  pro: "price_1SdFzbDJTVfj1w1LewiVA2tB", // À remplacer par le vrai Price ID après exécution du script
+  basic: "price_1SdFzZDJTVfj1w1LMuW9E0it", // BASIC - 4.99€/mois
+  plus: "price_1SdFzaDJTVfj1w1LIutBgn0E", // PLUS - 12.99€/mois
+  pro: "price_1SdFzbDJTVfj1w1LewiVA2tB", // PRO - 29.99€/mois
 };
 
 serve(async (req) => {

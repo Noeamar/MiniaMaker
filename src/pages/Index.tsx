@@ -40,6 +40,7 @@ export default function Index() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [billingOpen, setBillingOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   
   // Trial mode state (for non-authenticated users)
   const [trialMessages, setTrialMessages] = useState<ConversationMessage[]>([]);
@@ -366,6 +367,7 @@ export default function Index() {
         userEmail={user.email}
         onLogout={handleLogout}
         onOpenBilling={() => setBillingOpen(true)}
+        onOpenSidebar={() => setMobileSidebarOpen(true)}
       />
       
       <div className="flex-1 flex overflow-hidden">
@@ -373,12 +375,20 @@ export default function Index() {
           conversations={conversations}
           currentConversation={currentConversation}
           onNewConversation={handleNewConversation}
-          onSelectConversation={selectConversation}
+          onSelectConversation={(conv) => {
+            selectConversation(conv);
+            setMobileSidebarOpen(false); // Close mobile sidebar after selection
+          }}
           onDeleteConversation={deleteConversation}
-          onOpenBilling={() => setBillingOpen(true)}
+          onOpenBilling={() => {
+            setBillingOpen(true);
+            setMobileSidebarOpen(false); // Close mobile sidebar when opening billing
+          }}
           remainingGemini={getRemainingForModel('google/gemini-2.5-flash-image-preview')}
           remainingPro={getRemainingForModel('google/gemini-3-pro-image-preview')}
           isAuthenticated={true}
+          mobileOpen={mobileSidebarOpen}
+          onMobileOpenChange={setMobileSidebarOpen}
         />
 
         <ChatArea
