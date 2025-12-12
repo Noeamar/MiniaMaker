@@ -46,154 +46,78 @@ function getDimensions(resolution: ThumbnailResolution, ratio: ThumbnailRatio, c
   return resMap[resolution]?.[ratioValue] || resMap['1080p']['16:9'];
 }
 
-// Resize image to match format specifications WITHOUT cropping (intelligent scaling)
-async function resizeImageToFormat(
-  imageUrl: string,
-  format: FormatSettings
-): Promise<Blob> {
+// Resize image to exact dimensions specified by user (frontend processing)
+function resizeImage(base64: string, width: number, height: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
-    
     img.onload = () => {
-      const { width: targetWidth, height: targetHeight } = getDimensions(
-        format.resolution,
-        format.ratio,
-        format.customRatio
-      );
-      
-      // Calculate scaling to fit without cropping (letterboxing/pillarboxing if needed)
-      const sourceAspect = img.width / img.height;
-      const targetAspect = targetWidth / targetHeight;
-      
-      let drawWidth = targetWidth;
-      let drawHeight = targetHeight;
-      let drawX = 0;
-      let drawY = 0;
-      
-      // Scale to fit the entire image within target dimensions
-      if (sourceAspect > targetAspect) {
-        // Source is wider - fit to height, add padding on sides
-        drawHeight = targetHeight;
-        drawWidth = targetHeight * sourceAspect;
-        drawX = (targetWidth - drawWidth) / 2;
-      } else {
-        // Source is taller - fit to width, add padding on top/bottom
-        drawWidth = targetWidth;
-        drawHeight = targetWidth / sourceAspect;
-        drawY = (targetHeight - drawHeight) / 2;
-      }
-      
-      // Create canvas and draw resized image
-      const canvas = document.createElement('canvas');
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-      const ctx = canvas.getContext('2d');
-      
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
       if (!ctx) {
         reject(new Error('Could not get canvas context'));
         return;
       }
-      
-      // Fill background with white (or could use format.brandColor)
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, targetWidth, targetHeight);
-      
+
       // Use high-quality image rendering
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       
-      // Draw and resize WITHOUT cropping - entire image is visible
-      ctx.drawImage(
-        img,
-        0, 0, img.width, img.height,
-        drawX, drawY, drawWidth, drawHeight
-      );
-      
-      // Convert to blob
-      canvas.toBlob((blob) => {
-        if (blob) {
-          resolve(blob);
-        } else {
-          reject(new Error('Failed to create blob'));
-        }
-      }, 'image/png', 1.0);
+      // Draw image resized to exact dimensions
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Convert to base64 JPEG with high quality
+      resolve(canvas.toDataURL("image/jpeg", 0.92));
     };
-    
-    img.onerror = (error) => {
-      // If CORS fails, try loading via fetch and converting to blob URL
-      fetch(imageUrl)
-        .then(response => response.blob())
-        .then(blob => {
-          const blobUrl = URL.createObjectURL(blob);
-          const img2 = new Image();
-          img2.onload = () => {
-            const { width: targetWidth, height: targetHeight } = getDimensions(
-              format.resolution,
-              format.ratio,
-              format.customRatio
-            );
-            
-            const sourceAspect = img2.width / img2.height;
-            const targetAspect = targetWidth / targetHeight;
-            
-            let drawWidth = targetWidth;
-            let drawHeight = targetHeight;
-            let drawX = 0;
-            let drawY = 0;
-            
-            if (sourceAspect > targetAspect) {
-              drawHeight = targetHeight;
-              drawWidth = targetHeight * sourceAspect;
-              drawX = (targetWidth - drawWidth) / 2;
-            } else {
-              drawWidth = targetWidth;
-              drawHeight = targetWidth / sourceAspect;
-              drawY = (targetHeight - drawHeight) / 2;
-            }
-            
-            const canvas = document.createElement('canvas');
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-            const ctx = canvas.getContext('2d');
-            
-            if (!ctx) {
-              URL.revokeObjectURL(blobUrl);
-              reject(new Error('Could not get canvas context'));
-              return;
-            }
-            
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, targetWidth, targetHeight);
-            
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            
-            ctx.drawImage(
-              img2,
-              0, 0, img2.width, img2.height,
-              drawX, drawY, drawWidth, drawHeight
-            );
-            
-            canvas.toBlob((blob) => {
-              URL.revokeObjectURL(blobUrl);
-              if (blob) {
-                resolve(blob);
-              } else {
-                reject(new Error('Failed to create blob'));
-              }
-            }, 'image/png', 1.0);
-          };
-          img2.onerror = () => {
-            URL.revokeObjectURL(blobUrl);
-            reject(new Error('Failed to load image'));
-          };
-          img2.src = blobUrl;
-        })
-        .catch(() => reject(new Error('Failed to load image')));
-    };
-    img.src = imageUrl;
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = base64;
   });
+}
+
+// Resize image to match format specifications
+async function resizeImageToFormat(
+  imageUrl: string,
+  format: FormatSettings
+): Promise<Blob> {
+  // Get target dimensions from format settings
+  const { width: targetWidth, height: targetHeight } = getDimensions(
+    format.resolution,
+    format.ratio,
+    format.customRatio
+  );
+
+  // Convert image URL to base64 if needed
+  let base64Image: string;
+  
+  if (imageUrl.startsWith('data:')) {
+    // Already base64
+    base64Image = imageUrl;
+  } else {
+    // Fetch and convert to base64
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      base64Image = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      throw new Error('Failed to load image');
+    }
+  }
+
+  // Resize using the simple resize function
+  const resizedBase64 = await resizeImage(base64Image, targetWidth, targetHeight);
+
+  // Convert base64 to Blob
+  const response = await fetch(resizedBase64);
+  const blob = await response.blob();
+  
+  return blob;
 }
 
 export function ChatMessage({ message, userId }: ChatMessageProps) {
@@ -207,10 +131,10 @@ export function ChatMessage({ message, userId }: ChatMessageProps) {
       setIsProcessing(prev => ({ ...prev, [index]: true }));
       
       // Get format settings from message
-      const format = message.settings?.format;
+      const format = message.settings?.format as FormatSettings | undefined;
       
       let blob: Blob;
-      if (format) {
+      if (format && format.resolution && format.ratio) {
         // Resize image to match format specifications
         blob = await resizeImageToFormat(url, format);
       } else {
