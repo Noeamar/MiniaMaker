@@ -200,7 +200,7 @@ $$;
 -- 1. Go to Supabase Dashboard > Authentication > Users
 -- 2. Click "Add User" 
 -- 3. Email: noe.amar@icloud.com
--- 4. Password: Noeamar2209#
+-- 4. Password: 
 -- 5. Check "Auto Confirm User"
 -- 6. Click "Create User"
 -- 7. Then run: SELECT public.set_user_as_admin('noe.amar@icloud.com');
