@@ -4,7 +4,7 @@
 -- Step 1: Create the user in Supabase Auth Dashboard first
 -- Go to Authentication > Users > Add User
 -- Email: noe.amar@icloud.com
--- Password: Noeamar2209#
+-- Password: 
 -- Auto Confirm User: Yes
 
 -- Step 2: After user is created, run this SQL to set up admin profile
@@ -200,7 +200,7 @@ $$;
 -- 1. Go to Supabase Dashboard > Authentication > Users
 -- 2. Click "Add User" 
 -- 3. Email: noe.amar@icloud.com
--- 4. Password: Noeamar2209#
+-- 4. Password: 
 -- 5. Check "Auto Confirm User"
 -- 6. Click "Create User"
 -- 7. Then run: SELECT public.set_user_as_admin('noe.amar@icloud.com');
