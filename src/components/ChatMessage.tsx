@@ -216,7 +216,11 @@ export function ChatMessage({ message, userId }: ChatMessageProps) {
           {/* Display model used */}
           {message.model_used && !isUser && (
             <p className="text-xs text-muted-foreground">
-              Généré avec {message.model_used}
+              {message.model_used.includes('gemini-3-pro') || message.model_used.includes('3-pro')
+                ? 'Généré par MiniaMaker Pro'
+                : message.model_used.includes('gemini-2.5') || message.model_used.includes('2.5')
+                ? 'Généré par MiniaMaker 2'
+                : 'Généré par MiniaMaker'}
             </p>
           )}
         </div>
