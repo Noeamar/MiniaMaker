@@ -253,10 +253,13 @@ export default function Index() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('subscription') === 'success') {
       toast.success("Abonnement activé avec succès !");
-      refetchProfile();
+      // Force refresh profile after a short delay to allow webhook to process
+      setTimeout(() => {
+        refetchProfile();
+      }, 2000);
       window.history.replaceState({}, '', '/');
     }
-  }, []);
+  }, [refetchProfile]);
 
   // Not authenticated but in trial mode
   if (!user && isTrialMode) {

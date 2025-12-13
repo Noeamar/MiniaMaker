@@ -74,15 +74,29 @@ export function BillingDialog({
   const handleManageSubscription = async () => {
     setLoadingPortal(true);
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal');
+      const { data, error } = await supabase.functions.invoke('customer-portal', {
+        body: {}
+      });
 
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
+      if (error) {
+        console.error('Portal error:', error);
+        throw error;
       }
-    } catch (error) {
+      
+      if (data?.url) {
+        // On mobile, ouvrir dans la même fenêtre pour meilleure UX
+        if (window.innerWidth < 768) {
+          window.location.href = data.url;
+        } else {
+          window.open(data.url, '_blank');
+        }
+        toast.success("Redirection vers le portail client...");
+      } else {
+        throw new Error("Aucune URL reçue du portail client");
+      }
+    } catch (error: any) {
       console.error('Portal error:', error);
-      toast.error("Erreur d'accès au portail client");
+      toast.error(error.message || "Erreur d'accès au portail client. Vérifiez que vous avez un abonnement actif.");
     } finally {
       setLoadingPortal(false);
     }
@@ -101,12 +115,12 @@ export function BillingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Choisissez votre forfait</DialogTitle>
+          <DialogTitle className="text-xl md:text-2xl">Choisissez votre forfait</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mt-3 md:mt-4">
           {plans.map((plan) => {
             const isCurrentPlan = plan.plan_type === currentPlan;
             const isLoading = loadingPlan === plan.plan_type;
@@ -127,21 +141,21 @@ export function BillingDialog({
                   </Badge>
                 )}
                 
-                <CardHeader className="text-center pb-2">
-                  <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-secondary flex items-center justify-center">
+                <CardHeader className="text-center pb-2 px-3 md:px-6">
+                  <div className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-2 rounded-full bg-secondary flex items-center justify-center">
                     {planIcons[plan.plan_type]}
                   </div>
-                  <CardTitle className="text-lg">{plan.name}</CardTitle>
-                  <CardDescription>
-                    <span className="text-2xl font-bold text-foreground">
+                  <CardTitle className="text-base md:text-lg">{plan.name}</CardTitle>
+                  <CardDescription className="text-sm md:text-base">
+                    <span className="text-xl md:text-2xl font-bold text-foreground">
                       {plan.price_monthly}€
                     </span>
-                    <span className="text-sm">/mois</span>
+                    <span className="text-xs md:text-sm">/mois</span>
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="space-y-3">
-                  <div className="space-y-2 text-sm">
+                <CardContent className="space-y-2 md:space-y-3 px-3 md:px-6 pb-3 md:pb-6">
+                  <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-green-500" />
                       <span>
@@ -172,31 +186,39 @@ export function BillingDialog({
 
                   {isCurrentPlan && isPaid ? (
                     <Button 
-                      className="w-full gap-2"
+                      className="w-full gap-2 text-sm md:text-base h-9 md:h-10"
                       variant="outline"
                       onClick={handleManageSubscription}
                       disabled={loadingPortal}
                     >
                       {loadingPortal ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Chargement...</span>
+                        </>
                       ) : (
-                        <ExternalLink className="w-4 h-4" />
+                        <>
+                          <ExternalLink className="w-4 h-4" />
+                          <span>Gérer l'abonnement</span>
+                        </>
                       )}
-                      Gérer
                     </Button>
                   ) : (
                     <Button 
-                      className="w-full"
+                      className="w-full text-sm md:text-base h-9 md:h-10"
                       variant={isCurrentPlan ? "outline" : "default"}
                       disabled={isCurrentPlan || isLoading || !isPaid}
                       onClick={() => handleSelectPlan(plan.plan_type)}
                     >
                       {isLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          <span>Chargement...</span>
+                        </>
                       ) : isCurrentPlan ? (
                         'Plan actuel'
                       ) : (
-                        'Choisir'
+                        'Choisir ce plan'
                       )}
                     </Button>
                   )}
@@ -206,8 +228,9 @@ export function BillingDialog({
           })}
         </div>
 
-        <p className="text-center text-sm text-muted-foreground mt-4">
+        <p className="text-center text-xs md:text-sm text-muted-foreground mt-3 md:mt-4 px-2">
           Les limites sont réinitialisées chaque mois.
+          <br className="md:hidden" />
           Paiement sécurisé via Stripe.
         </p>
       </DialogContent>

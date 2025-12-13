@@ -10,7 +10,8 @@ const corsHeaders = {
 // Map Stripe plan IDs to Supabase subscription plans
 const PLAN_MAPPING: Record<string, string> = {
   basic: 'basic',
-  standard: 'standard',
+  plus: 'plus',
+  standard: 'plus', // Legacy mapping for 'standard' -> 'plus'
   pro: 'pro',
 };
 
@@ -72,7 +73,7 @@ serve(async (req) => {
           const priceId = subscription.items.data[0]?.price?.id;
           const customerId = subscription.customer as string;
 
-          // Update user profile
+          // Update user profile and reset monthly counters
           const { error: updateError } = await supabaseClient
             .from("profiles")
             .update({
@@ -80,6 +81,9 @@ serve(async (req) => {
               stripe_customer_id: customerId,
               stripe_subscription_id: subscription.id,
               stripe_price_id: priceId,
+              monthly_generations_medium: 0,
+              monthly_generations_pro: 0,
+              monthly_reset_date: new Date().toISOString().split('T')[0], // Reset to current month
             })
             .eq("user_id", userId);
 
@@ -92,10 +96,9 @@ serve(async (req) => {
         break;
       }
 
-      case "customer.subscription.created":
-      case "customer.subscription.updated": {
+      case "customer.subscription.created": {
         const subscription = event.data.object as Stripe.Subscription;
-        console.log(`[STRIPE-WEBHOOK] Subscription ${event.type}:`, subscription.id);
+        console.log(`[STRIPE-WEBHOOK] Subscription created:`, subscription.id);
 
         const customerId = subscription.customer as string;
         const priceId = subscription.items.data[0]?.price?.id;
@@ -124,20 +127,87 @@ serve(async (req) => {
           break;
         }
 
-        // Update profile
+        // Update profile and reset monthly counters for new subscription
+        const updateData: any = {
+          subscription_plan: supabasePlan,
+          stripe_subscription_id: subscription.id,
+          stripe_price_id: priceId,
+          monthly_generations_medium: 0,
+          monthly_generations_pro: 0,
+          monthly_reset_date: new Date().toISOString().split('T')[0],
+        };
+
         const { error: updateError } = await supabaseClient
           .from("profiles")
-          .update({
-            subscription_plan: supabasePlan,
-            stripe_subscription_id: subscription.id,
-            stripe_price_id: priceId,
-          })
+          .update(updateData)
           .eq("user_id", profile.user_id);
 
         if (updateError) {
           console.error("[STRIPE-WEBHOOK] Error updating profile:", updateError);
         } else {
           console.log(`[STRIPE-WEBHOOK] Updated user ${profile.user_id} to plan ${supabasePlan}`);
+        }
+        break;
+      }
+
+      case "customer.subscription.updated": {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log(`[STRIPE-WEBHOOK] Subscription updated:`, subscription.id);
+
+        // Check if subscription is cancelled but still active until period end
+        const isCancelled = subscription.cancel_at_period_end;
+        const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+
+        if (isCancelled && isActive) {
+          // Subscription cancelled but still active until period end
+          // Keep the current plan and credits until the period ends
+          const periodEnd = new Date(subscription.current_period_end * 1000).toISOString();
+          console.log(`[STRIPE-WEBHOOK] Subscription ${subscription.id} cancelled but active until ${periodEnd}`);
+          console.log(`[STRIPE-WEBHOOK] User keeps access and credits until period end`);
+          // Don't change the plan yet - user keeps access until period end
+          break;
+        }
+
+        // If subscription is reactivated (user cancelled then reactivated)
+        if (!isCancelled && isActive) {
+          const customerId = subscription.customer as string;
+          const priceId = subscription.items.data[0]?.price?.id;
+
+          // Get product metadata to find plan_id
+          const price = await stripe.prices.retrieve(priceId);
+          const product = await stripe.products.retrieve(price.product as string);
+          const planId = product.metadata?.plan_id;
+
+          if (planId) {
+            const supabasePlan = PLAN_MAPPING[planId] || 'free';
+
+            // Find user by customer_id
+            const { data: profile, error: findError } = await supabaseClient
+              .from("profiles")
+              .select("user_id, subscription_plan")
+              .eq("stripe_customer_id", customerId)
+              .single();
+
+            if (!findError && profile) {
+              // Only reset counters if plan actually changed
+              const updateData: any = {
+                subscription_plan: supabasePlan,
+                stripe_subscription_id: subscription.id,
+                stripe_price_id: priceId,
+              };
+
+              if (profile.subscription_plan !== supabasePlan) {
+                updateData.monthly_generations_medium = 0;
+                updateData.monthly_generations_pro = 0;
+                updateData.monthly_reset_date = new Date().toISOString().split('T')[0];
+              }
+
+              await supabaseClient
+                .from("profiles")
+                .update(updateData)
+                .eq("user_id", profile.user_id);
+            }
+          }
         }
         break;
       }
@@ -160,20 +230,23 @@ serve(async (req) => {
           break;
         }
 
-        // Reset to free plan
+        // Reset to free plan only when subscription actually ends
+        // Credits remain available until monthly_reset_date
         const { error: updateError } = await supabaseClient
           .from("profiles")
           .update({
             subscription_plan: 'free',
             stripe_subscription_id: null,
             stripe_price_id: null,
+            // Keep monthly_generations_medium and monthly_generations_pro
+            // They will be reset at monthly_reset_date
           })
           .eq("user_id", profile.user_id);
 
         if (updateError) {
           console.error("[STRIPE-WEBHOOK] Error updating profile:", updateError);
         } else {
-          console.log(`[STRIPE-WEBHOOK] Reset user ${profile.user_id} to free plan`);
+          console.log(`[STRIPE-WEBHOOK] Reset user ${profile.user_id} to free plan (credits remain until period end)`);
         }
         break;
       }
