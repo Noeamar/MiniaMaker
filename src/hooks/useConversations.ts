@@ -3,6 +3,37 @@ import { supabase } from '@/integrations/supabase/client';
 import { Conversation, ConversationMessage } from '@/types/thumbnail';
 import { toast } from 'sonner';
 
+// Generate a short title (2-3 words) from message content
+function generateShortTitle(content: string): string {
+  // Remove extra whitespace and split into words
+  const words = content.trim().split(/\s+/).filter(word => word.length > 0);
+  
+  // Remove common stop words (French)
+  const stopWords = new Set([
+    'le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'et', 'ou', 'mais', 'pour', 'avec', 'sans',
+    'sur', 'dans', 'par', 'à', 'en', 'ce', 'cette', 'ces', 'qui', 'que', 'quoi', 'où', 'quand',
+    'comment', 'pourquoi', 'je', 'tu', 'il', 'elle', 'nous', 'vous', 'ils', 'elles',
+    'mon', 'ma', 'mes', 'ton', 'ta', 'tes', 'son', 'sa', 'ses', 'notre', 'votre', 'leur',
+    'est', 'sont', 'était', 'étaient', 'être', 'avoir', 'a', 'as', 'ont',
+    'créer', 'faire', 'générer', 'miniature', 'youtube', 'une', 'des', 'les'
+  ]);
+  
+  // Filter out stop words and get meaningful words
+  const meaningfulWords = words
+    .map(word => word.toLowerCase().replace(/[.,!?;:()\[\]{}'"]/g, ''))
+    .filter(word => word.length > 2 && !stopWords.has(word))
+    .slice(0, 3); // Take first 3 meaningful words
+  
+  // If we have meaningful words, join them (max 3 words)
+  if (meaningfulWords.length > 0) {
+    return meaningfulWords.slice(0, 3).join(' ').substring(0, 30); // Max 30 chars total
+  }
+  
+  // Fallback: take first 2-3 words regardless
+  const fallback = words.slice(0, 3).join(' ');
+  return fallback.length > 30 ? fallback.substring(0, 27) + '...' : fallback;
+}
+
 export function useConversations(userId: string | undefined) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
@@ -153,9 +184,9 @@ export function useConversations(userId: string | undefined) {
 
     setMessages(prev => [...prev, typedMessage]);
     
-    // Update conversation title from first user message
+    // Update conversation title from first user message (2-3 words max)
     if (role === 'user' && messages.length === 0) {
-      const shortTitle = content.slice(0, 50) + (content.length > 50 ? '...' : '');
+      const shortTitle = generateShortTitle(content);
       await updateConversationTitle(currentConversation.id, shortTitle);
     }
 
