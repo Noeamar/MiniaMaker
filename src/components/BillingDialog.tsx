@@ -84,12 +84,9 @@ export function BillingDialog({
       }
       
       if (data?.url) {
-        // On mobile, ouvrir dans la même fenêtre pour meilleure UX
-        if (window.innerWidth < 768) {
-          window.location.href = data.url;
-        } else {
-          window.open(data.url, '_blank');
-        }
+        // Always redirect in same window to avoid pop-up blockers
+        // Stripe portal will redirect back automatically after actions
+        window.location.href = data.url;
         toast.success("Redirection vers le portail client...");
       } else {
         throw new Error("Aucune URL reçue du portail client");
