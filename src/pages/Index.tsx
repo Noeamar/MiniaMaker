@@ -107,15 +107,29 @@ export default function Index() {
         setTrialMessages(prev => [...prev, userMessage]);
       }
 
-      // Collect all image URLs
+      // Collect all image URLs - ensure ALL images are included
       const imageUrls: string[] = [];
-      for (const img of images) {
+      console.log(`[INDEX] Processing ${images.length} image(s) for generation`);
+      for (let idx = 0; idx < images.length; idx++) {
+        const img = images[idx];
         if (img.url && !img.url.startsWith('blob:')) {
           imageUrls.push(img.url);
+          console.log(`[INDEX] Image ${idx + 1}: Using URL (${img.url.substring(0, 50)}...)`);
         } else if (img.file) {
           const base64 = await fileToBase64(img.file);
-          if (base64) imageUrls.push(base64);
+          if (base64) {
+            imageUrls.push(base64);
+            console.log(`[INDEX] Image ${idx + 1}: Converted to base64 (${base64.length} chars)`);
+          } else {
+            console.warn(`[INDEX] Failed to convert image ${idx + 1} to base64`);
+          }
+        } else {
+          console.warn(`[INDEX] Image ${idx + 1} has no URL or file`);
         }
+      }
+      console.log(`[INDEX] Total images prepared: ${imageUrls.length}/${images.length}`);
+      if (imageUrls.length !== images.length) {
+        console.warn(`[INDEX] WARNING: Not all images were prepared! Expected ${images.length}, got ${imageUrls.length}`);
       }
 
       // Call generation API with conversation history for context

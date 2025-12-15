@@ -101,9 +101,12 @@ function buildOptimizedPrompt(request: GenerationRequest): string {
   
   // Add image references if provided
   if (images && images.length > 0) {
-    optimizedPrompt += `IMAGES DE RÉFÉRENCE À INTÉGRER:\n`;
-    optimizedPrompt += `Utilise les images suivantes comme références visuelles obligatoires.\n`;
-    optimizedPrompt += `Intègre-les naturellement dans la composition pour améliorer la clarté, les points focaux, les émotions, les logos ou les éléments d'arrière-plan.\n\n`;
+    optimizedPrompt += `IMAGES DE RÉFÉRENCE À INTÉGRER (${images.length} image${images.length > 1 ? 's' : ''}):\n`;
+    optimizedPrompt += `Tu as reçu ${images.length} image${images.length > 1 ? 's' : ''} de référence que tu DOIS utiliser dans la génération.\n`;
+    optimizedPrompt += `Ces images sont OBLIGATOIRES et doivent être intégrées dans la composition finale.\n`;
+    optimizedPrompt += `- Utilise TOUTES les images fournies comme références visuelles\n`;
+    optimizedPrompt += `- Intègre-les naturellement dans la composition pour améliorer la clarté, les points focaux, les émotions, les logos ou les éléments d'arrière-plan\n`;
+    optimizedPrompt += `- Ne néglige AUCUNE image - chacune doit avoir un impact sur le résultat final\n\n`;
   }
   
   // Add user prompt
@@ -307,14 +310,28 @@ serve(async (req) => {
       const promptText = optimizedPrompt + (i > 0 ? ` (Variation ${i + 1}: composition et style légèrement différents)` : '');
       parts.push({ text: promptText });
       
-      // Add reference images if provided
+      // Add reference images if provided - ALL images must be included
       if (images && images.length > 0) {
-        for (const imageUrl of images) {
+        console.log(`[GENERATE-THUMBNAIL] Processing ${images.length} reference image(s)`);
+        let imagesAdded = 0;
+        for (let idx = 0; idx < images.length; idx++) {
+          const imageUrl = images[idx];
+          console.log(`[GENERATE-THUMBNAIL] Processing image ${idx + 1}/${images.length}`);
           const imagePart = await prepareImageForGemini(imageUrl);
           if (imagePart) {
             parts.push(imagePart);
+            imagesAdded++;
+            console.log(`[GENERATE-THUMBNAIL] Image ${idx + 1} added successfully`);
+          } else {
+            console.warn(`[GENERATE-THUMBNAIL] Failed to prepare image ${idx + 1}`);
           }
         }
+        console.log(`[GENERATE-THUMBNAIL] Total images added to parts: ${imagesAdded}/${images.length}`);
+        if (imagesAdded !== images.length) {
+          console.warn(`[GENERATE-THUMBNAIL] WARNING: Not all images were added! Expected ${images.length}, got ${imagesAdded}`);
+        }
+      } else {
+        console.log(`[GENERATE-THUMBNAIL] No reference images provided`);
       }
       
       // Add brand logo if provided
@@ -446,3 +463,4 @@ serve(async (req) => {
     );
   }
 });
+
