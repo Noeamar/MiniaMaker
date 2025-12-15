@@ -12,7 +12,7 @@ Ce guide explique comment créer un compte administrateur avec des générations
 4. Cliquez sur **"Add User"** ou **"Invite User"**
 5. Remplissez le formulaire :
    - **Email** : `noe.amar@icloud.com`
-   - **Password** : `Noeamar2209#`
+   - **Password** : ``
    - **Auto Confirm User** : ✅ Cochez cette case
 6. Cliquez sur **"Create User"**
 
