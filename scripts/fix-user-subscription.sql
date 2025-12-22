@@ -37,3 +37,4 @@ JOIN public.profiles p ON p.user_id = u.id
 LEFT JOIN public.subscription_plans sp ON sp.plan_type = p.subscription_plan
 WHERE u.email = 'VOTRE_EMAIL';
 
+

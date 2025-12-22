@@ -205,3 +205,4 @@ $$;
 -- 6. Click "Create User"
 -- 7. Then run: SELECT public.set_user_as_admin('noe.amar@icloud.com');
 
+

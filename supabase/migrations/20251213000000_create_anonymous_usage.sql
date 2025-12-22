@@ -46,3 +46,4 @@ $$;
 -- Optional: Create a scheduled job to run cleanup (requires pg_cron extension)
 -- SELECT cron.schedule('cleanup-anonymous-usage', '0 0 * * *', 'SELECT public.cleanup_old_anonymous_usage()');
 
+
