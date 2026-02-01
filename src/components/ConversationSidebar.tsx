@@ -98,12 +98,15 @@ function SidebarContent({
             <div
               key={conversation.id}
               className={cn(
-                "group flex items-center gap-1.5 p-1.5 rounded-lg cursor-pointer hover:bg-secondary/50 transition-colors min-w-0",
-                currentConversation?.id === conversation.id && "bg-secondary"
+                "group flex items-center gap-1.5 p-2 rounded-lg cursor-pointer transition-all duration-150 min-w-0",
+                "hover:bg-muted/80 active:bg-muted active:scale-[0.98]",
+                currentConversation?.id === conversation.id 
+                  ? "bg-primary/10 border border-primary/20 shadow-sm" 
+                  : "hover:shadow-sm"
               )}
               onClick={() => onSelectConversation(conversation)}
             >
-              <MessageSquare className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+              <MessageSquare className="w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
               {!isCollapsed && (
                 <>
                   <span className="flex-1 text-sm truncate min-w-0 max-w-[calc(100%-3rem)]">
