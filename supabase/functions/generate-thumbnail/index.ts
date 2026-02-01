@@ -127,19 +127,20 @@ function buildOptimizedPrompt(request: GenerationRequest): string {
   return optimizedPrompt;
 }
 
-// Map Lovable model names to Google Gemini API model names
 // Map internal model names to Google Gemini API model names
 function mapModelToGemini(model: string): string {
   const modelMap: Record<string, string> = {
-    // NORMAL – medium price (2.5)
-    'google/gemini-2.5-flash-image-preview': 'gemini-2.5-flash-image-preview',
+    // NORMAL – medium price (2.5) - stable version
+    'google/gemini-2.5-flash-image': 'gemini-2.5-flash-image',
+    // Legacy name support
+    'google/gemini-2.5-flash-image-preview': 'gemini-2.5-flash-image',
 
     // PRO – best quality (3.0)
     'google/gemini-3-pro-image-preview': 'gemini-3-pro-image-preview',
   };
 
-  // Default to normal model
-  return modelMap[model] || 'gemini-2.5-flash-image-preview';
+  // Default to stable model
+  return modelMap[model] || 'gemini-2.5-flash-image';
 }
 
 // Convert image URL or base64 to Gemini format
@@ -291,7 +292,7 @@ serve(async (req) => {
     }
 
     // Use selected model or default
-    const selectedModel = model || 'google/gemini-2.5-flash-image-preview';
+    const selectedModel = model || 'google/gemini-2.5-flash-image';
     const geminiModel = mapModelToGemini(selectedModel);
     console.log('Using model:', selectedModel, '->', geminiModel);
 
@@ -463,5 +464,7 @@ serve(async (req) => {
     );
   }
 });
+
+
 
 

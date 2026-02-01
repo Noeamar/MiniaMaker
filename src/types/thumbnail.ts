@@ -1,6 +1,6 @@
 export type InputMode = 'free' | 'guided' | 'assisted';
 
-export type AIModel = 'google/gemini-2.0-basic-lite' | 'google/gemini-2.5-flash-image-preview' | 'google/gemini-3-pro-image-preview';
+export type AIModel = 'google/gemini-2.0-basic-lite' | 'google/gemini-2.5-flash-image' | 'google/gemini-3-pro-image-preview';
 
 export type ThumbnailRatio = '16:9' | '1:1' | '9:16' | 'custom';
 export type ThumbnailResolution = '720p' | '1080p' | '4K';
@@ -98,7 +98,7 @@ export interface SubscriptionPlanInfo {
 
 export const AI_MODELS: { value: AIModel; label: string; description: string; icon: string }[] = [
   {
-    value: 'google/gemini-2.5-flash-image-preview',
+    value: 'google/gemini-2.5-flash-image',
     label: 'MiniaMaker 2',
     description: 'Équilibré, recommandé',
     icon: '✨'

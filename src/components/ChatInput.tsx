@@ -19,7 +19,7 @@ interface ChatInputProps {
 export function ChatInput({ onSend, isGenerating, disabled, remainingForModel }: ChatInputProps) {
   const [prompt, setPrompt] = useState('');
   const [images, setImages] = useState<UploadedImage[]>([]);
-  const [selectedModel, setSelectedModel] = useState<AIModel>('google/gemini-2.5-flash-image-preview');
+  const [selectedModel, setSelectedModel] = useState<AIModel>('google/gemini-2.5-flash-image');
   const [formatSettings, setFormatSettings] = useState<FormatSettings>(DEFAULT_FORMAT_SETTINGS);
   const [showImages, setShowImages] = useState(false);
   const [showAdvancedPrompt, setShowAdvancedPrompt] = useState(false);

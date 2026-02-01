@@ -47,3 +47,5 @@ $$;
 -- SELECT cron.schedule('cleanup-anonymous-usage', '0 0 * * *', 'SELECT public.cleanup_old_anonymous_usage()');
 
 
+
+

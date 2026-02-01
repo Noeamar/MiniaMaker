@@ -101,7 +101,7 @@ export function useUserProfile(userId: string | undefined) {
     let used: number;
     let limit: number | null;
     
-    if (model.includes('gemini-2.5-flash-image-preview')) {
+    if (model.includes('gemini-2.5-flash-image')) {
       // Medium model (2.5 Flash) - MiniaMaker 2
       // For free plan: use daily limit (3/day)
       // For paid plans: use monthly limit

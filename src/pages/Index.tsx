@@ -401,7 +401,7 @@ export default function Index() {
             setBillingOpen(true);
             setMobileSidebarOpen(false); // Close mobile sidebar when opening billing
           }}
-          remainingGemini={getRemainingForModel('google/gemini-2.5-flash-image-preview')}
+          remainingGemini={getRemainingForModel('google/gemini-2.5-flash-image')}
           remainingPro={getRemainingForModel('google/gemini-3-pro-image-preview')}
           isAuthenticated={true}
           mobileOpen={mobileSidebarOpen}
