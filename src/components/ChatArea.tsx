@@ -1,10 +1,11 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatMessage } from '@/components/ChatMessage';
 import { ChatInput } from '@/components/ChatInput';
 import { GenerationProgress } from '@/components/GenerationProgress';
 import { ThumbnailGuide } from '@/components/ThumbnailGuide';
-import { ConversationMessage, AIModel, FormatSettings, UploadedImage } from '@/types/thumbnail';
+import { PromptTemplates } from '@/components/PromptTemplates';
+import { ConversationMessage, AIModel, FormatSettings, UploadedImage, DEFAULT_FORMAT_SETTINGS } from '@/types/thumbnail';
 import { Sparkles } from 'lucide-react';
 
 interface ChatAreaProps {
@@ -15,6 +16,7 @@ interface ChatAreaProps {
   remainingForModel: (model: AIModel) => number;
   disabled?: boolean;
   userId?: string;
+  onRegenerate?: (prompt: string, model: AIModel, format: FormatSettings) => void;
 }
 
 export function ChatArea({ 
@@ -24,15 +26,31 @@ export function ChatArea({
   onSend, 
   remainingForModel,
   disabled,
-  userId
+  userId,
+  onRegenerate
 }: ChatAreaProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [pendingPrompt, setPendingPrompt] = useState('');
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isGenerating]);
+
+  const handleTemplateSelect = (prompt: string) => {
+    setPendingPrompt(prompt);
+  };
+
+  const handleRegenerate = (content: string, settings: Record<string, unknown>) => {
+    // Find the last user message to get the original prompt
+    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+    if (lastUserMessage && onRegenerate) {
+      const model = (settings?.model as AIModel) || 'google/gemini-2.5-flash-image';
+      const format = (settings?.format as FormatSettings) || DEFAULT_FORMAT_SETTINGS;
+      onRegenerate(lastUserMessage.content, model, format);
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col h-full">
@@ -51,6 +69,11 @@ export function ChatArea({
                   Décrivez la miniature YouTube que vous souhaitez créer. Ajoutez des images de référence si vous le souhaitez.
                 </p>
               </div>
+
+              {/* Prompt Templates */}
+              <div className="max-w-2xl mx-auto px-2">
+                <PromptTemplates onSelect={handleTemplateSelect} />
+              </div>
               
               <div className="max-w-2xl mx-auto px-2">
                 <ThumbnailGuide />
@@ -58,7 +81,12 @@ export function ChatArea({
             </div>
           ) : (
             messages.map((message) => (
-              <ChatMessage key={message.id} message={message} userId={userId} />
+              <ChatMessage 
+                key={message.id} 
+                message={message} 
+                userId={userId}
+                onRegenerate={handleRegenerate}
+              />
             ))
           )}
 
@@ -75,6 +103,8 @@ export function ChatArea({
         isGenerating={isGenerating}
         disabled={disabled}
         remainingForModel={remainingForModel}
+        initialPrompt={pendingPrompt}
+        onPromptUsed={() => setPendingPrompt('')}
       />
     </div>
   );

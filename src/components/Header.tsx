@@ -1,6 +1,7 @@
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Play, User, LogOut, CreditCard, Menu } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -46,7 +47,8 @@ export function Header({ isAuthenticated, userEmail, onLogout, onOpenBilling, on
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
+          <ThemeToggle />
           {isAuthenticated ? (
             <>
               <span className="text-sm text-muted-foreground hidden md:block">

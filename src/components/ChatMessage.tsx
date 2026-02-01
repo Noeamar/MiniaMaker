@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { ConversationMessage, FormatSettings, ThumbnailRatio, ThumbnailResolution } from '@/types/thumbnail';
 import { cn } from '@/lib/utils';
-import { User, Bot, Download } from 'lucide-react';
+import { User, Bot, Download, RefreshCw, ZoomIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FeedbackDialog } from '@/components/FeedbackDialog';
+import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import { toast } from 'sonner';
 
 interface ChatMessageProps {
   message: ConversationMessage;
   userId?: string;
+  onRegenerate?: (prompt: string, settings: Record<string, unknown>) => void;
 }
 
 // Calculate dimensions based on resolution and ratio
@@ -120,11 +122,20 @@ async function resizeImageToFormat(
   return blob;
 }
 
-export function ChatMessage({ message, userId }: ChatMessageProps) {
+export function ChatMessage({ message, userId, onRegenerate }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState('');
   const [isProcessing, setIsProcessing] = useState<Record<number, boolean>>({});
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [previewIndex, setPreviewIndex] = useState(0);
+
+  const handlePreview = (url: string, index: number) => {
+    setPreviewUrl(url);
+    setPreviewIndex(index);
+    setPreviewOpen(true);
+  };
 
   const handleDownload = async (url: string, index: number) => {
     try {
@@ -195,22 +206,69 @@ export function ChatMessage({ message, userId }: ChatMessageProps) {
                   <img 
                     src={url} 
                     alt={`Miniature ${index + 1}`}
-                    className="w-full aspect-video object-cover"
+                    className="w-full aspect-video object-cover cursor-pointer"
+                    onClick={() => handlePreview(url, index)}
                   />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <Button
                       size="sm"
                       variant="secondary"
-                      onClick={() => handleDownload(url, index)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePreview(url, index);
+                      }}
+                    >
+                      <ZoomIn className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownload(url, index);
+                      }}
                       disabled={isProcessing[index]}
                     >
-                      <Download className="w-4 h-4 mr-1" />
-                      {isProcessing[index] ? 'Traitement...' : 'Télécharger'}
+                      <Download className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
               ))}
             </div>
+          )}
+
+          {/* Regenerate button for assistant messages with images */}
+          {!isUser && message.image_urls && message.image_urls.length > 0 && onRegenerate && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 mt-2"
+              onClick={() => {
+                onRegenerate(message.content, message.settings);
+              }}
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Regénérer
+            </Button>
+          )}
+
+          {/* Retry button for error messages */}
+          {!isUser && (!message.image_urls || message.image_urls.length === 0) && 
+           (message.content.toLowerCase().includes('erreur') || 
+            message.content.toLowerCase().includes('désolé') ||
+            message.content.toLowerCase().includes('échec')) && 
+           onRegenerate && (
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-2 mt-2"
+              onClick={() => {
+                onRegenerate(message.content, message.settings);
+              }}
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Réessayer
+            </Button>
           )}
 
           {/* Display model used */}
@@ -225,6 +283,14 @@ export function ChatMessage({ message, userId }: ChatMessageProps) {
           )}
         </div>
       </div>
+
+      <ImagePreviewModal
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        imageUrl={previewUrl}
+        onDownload={() => handleDownload(previewUrl, previewIndex)}
+        isDownloading={isProcessing[previewIndex]}
+      />
 
       <FeedbackDialog
         open={feedbackOpen}

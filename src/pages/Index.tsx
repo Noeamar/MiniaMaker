@@ -4,6 +4,7 @@ import { Header } from '@/components/Header';
 import { ConversationSidebar } from '@/components/ConversationSidebar';
 import { ChatArea } from '@/components/ChatArea';
 import { BillingDialog } from '@/components/BillingDialog';
+import { OnboardingTour } from '@/components/OnboardingTour';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -25,6 +26,7 @@ export default function Index() {
     createConversation, 
     selectConversation, 
     deleteConversation,
+    updateConversationTitle,
     addMessage,
     setCurrentConversation,
     setMessages
@@ -262,6 +264,18 @@ export default function Index() {
     setTrialMessages([]);
   };
 
+  const handleRegenerate = (prompt: string, model: AIModel, format: FormatSettings) => {
+    // Find the last user message to get images if any
+    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+    const images: UploadedImage[] = []; // For now, regenerate without images
+    handleSendMessage(prompt, images, model, format);
+  };
+
+  const handleRenameConversation = async (id: string, newTitle: string) => {
+    await updateConversationTitle(id, newTitle);
+    toast.success('Conversation renommée');
+  };
+
   // Check for subscription success in URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -376,6 +390,10 @@ export default function Index() {
     );
   }
 
+  // Get limits for progress bars
+  const geminiLimits = getRemainingGenerations('google/gemini-2.5-flash-image' as AIModel);
+  const proLimits = getRemainingGenerations('google/gemini-3-pro-image-preview' as AIModel);
+
   // Authenticated view with chat interface
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -397,12 +415,15 @@ export default function Index() {
             setMobileSidebarOpen(false); // Close mobile sidebar after selection
           }}
           onDeleteConversation={deleteConversation}
+          onRenameConversation={handleRenameConversation}
           onOpenBilling={() => {
             setBillingOpen(true);
             setMobileSidebarOpen(false); // Close mobile sidebar when opening billing
           }}
           remainingGemini={getRemainingForModel('google/gemini-2.5-flash-image')}
           remainingPro={getRemainingForModel('google/gemini-3-pro-image-preview')}
+          limitGemini={geminiLimits.limit}
+          limitPro={proLimits.limit}
           isAuthenticated={true}
           mobileOpen={mobileSidebarOpen}
           onMobileOpenChange={setMobileSidebarOpen}
@@ -416,6 +437,7 @@ export default function Index() {
           remainingForModel={getRemainingForModel}
           disabled={!currentConversation}
           userId={user?.id}
+          onRegenerate={handleRegenerate}
         />
       </div>
 
@@ -426,6 +448,9 @@ export default function Index() {
         currentPlan={(profile?.subscription_plan as SubscriptionPlan) || 'free'}
         onSubscriptionChange={refetchProfile}
       />
+
+      {/* Onboarding tour for new users */}
+      <OnboardingTour onComplete={() => {}} />
     </div>
   );
 }

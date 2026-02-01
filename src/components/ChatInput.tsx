@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ImageUploader } from '@/components/ImageUploader';
@@ -14,10 +14,21 @@ interface ChatInputProps {
   isGenerating: boolean;
   disabled?: boolean;
   remainingForModel: (model: AIModel) => number;
+  initialPrompt?: string;
+  onPromptUsed?: () => void;
 }
 
-export function ChatInput({ onSend, isGenerating, disabled, remainingForModel }: ChatInputProps) {
+export function ChatInput({ onSend, isGenerating, disabled, remainingForModel, initialPrompt, onPromptUsed }: ChatInputProps) {
   const [prompt, setPrompt] = useState('');
+
+  // Handle initial prompt from templates
+  useEffect(() => {
+    if (initialPrompt && initialPrompt !== prompt) {
+      setPrompt(initialPrompt);
+      textareaRef.current?.focus();
+      onPromptUsed?.();
+    }
+  }, [initialPrompt]);
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [selectedModel, setSelectedModel] = useState<AIModel>('google/gemini-2.5-flash-image');
   const [formatSettings, setFormatSettings] = useState<FormatSettings>(DEFAULT_FORMAT_SETTINGS);
