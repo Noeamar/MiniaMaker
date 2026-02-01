@@ -14,6 +14,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
+import {
   Sheet,
   SheetContent,
 } from '@/components/ui/sheet';
@@ -151,88 +157,84 @@ function SidebarContent({
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
           {conversations.map((conversation) => (
-            <div
-              key={conversation.id}
-              className={cn(
-                "group flex items-center gap-1.5 p-2 rounded-lg cursor-pointer transition-all duration-150 min-w-0",
-                "hover:bg-muted/80 active:bg-muted active:scale-[0.98]",
-                currentConversation?.id === conversation.id 
-                  ? "bg-primary/10 border border-primary/20 shadow-sm" 
-                  : "hover:shadow-sm"
-              )}
-              onClick={() => editingId !== conversation.id && onSelectConversation(conversation)}
-            >
-              <MessageSquare className="w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
-              {!isCollapsed && (
-                <>
-                  {editingId === conversation.id ? (
-                    <div className="flex-1 flex items-center gap-1 min-w-0">
-                      <Input
-                        ref={inputRef}
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, conversation.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="h-6 text-sm py-0 px-1"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="w-5 h-5 flex-shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSaveEdit(conversation.id);
-                        }}
-                      >
-                        <Check className="w-3 h-3 text-green-500" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="w-5 h-5 flex-shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCancelEdit();
-                        }}
-                      >
-                        <X className="w-3 h-3 text-destructive" />
-                      </Button>
-                    </div>
-                  ) : (
+            <ContextMenu key={conversation.id}>
+              <ContextMenuTrigger asChild>
+                <div
+                  className={cn(
+                    "group flex items-center gap-1.5 p-2 rounded-lg cursor-pointer transition-all duration-150 min-w-0",
+                    "hover:bg-muted/80 active:bg-muted active:scale-[0.98]",
+                    currentConversation?.id === conversation.id 
+                      ? "bg-primary/10 border border-primary/20 shadow-sm" 
+                      : "hover:shadow-sm"
+                  )}
+                  onClick={() => editingId !== conversation.id && onSelectConversation(conversation)}
+                >
+                  <MessageSquare className="w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  {!isCollapsed && (
                     <>
-                      <span className="flex-1 text-sm truncate min-w-0 max-w-[calc(100%-4.5rem)]">
-                        {conversation.title}
-                      </span>
-                      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-                        {onRenameConversation && (
+                      {editingId === conversation.id ? (
+                        <div className="flex-1 flex items-center gap-1 min-w-0">
+                          <Input
+                            ref={inputRef}
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, conversation.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="h-6 text-sm py-0 px-1"
+                          />
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="w-6 h-6"
-                            onClick={(e) => handleStartEdit(e, conversation)}
-                            title="Renommer"
+                            className="w-5 h-5 flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSaveEdit(conversation.id);
+                            }}
                           >
-                            <Pencil className="w-3 h-3" />
+                            <Check className="w-3 h-3 text-green-500" />
                           </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="w-6 h-6"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConversationToDelete(conversation.id);
-                          }}
-                          title="Supprimer la conversation"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-5 h-5 flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCancelEdit();
+                            }}
+                          >
+                            <X className="w-3 h-3 text-destructive" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="flex-1 text-sm truncate min-w-0">
+                          {conversation.title}
+                        </span>
+                      )}
                     </>
                   )}
-                </>
-              )}
-            </div>
+                </div>
+              </ContextMenuTrigger>
+              <ContextMenuContent>
+                {onRenameConversation && (
+                  <ContextMenuItem 
+                    onClick={() => {
+                      setEditingId(conversation.id);
+                      setEditValue(conversation.title);
+                    }}
+                  >
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Renommer
+                  </ContextMenuItem>
+                )}
+                <ContextMenuItem 
+                  onClick={() => setConversationToDelete(conversation.id)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Supprimer
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
           ))}
         </div>
       </ScrollArea>
